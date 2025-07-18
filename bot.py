@@ -2,7 +2,6 @@ import logging
 from aiogram import Bot, Dispatcher, types
 import asyncio
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram.dispatcher.filters import CommandStart
 from aiogram.utils.callback_data import CallbackData
 
 API_TOKEN = '8189935957:AAHIGvtVwJCnrpj2tTNCJEZbwfcYvlRYfmQ'
@@ -61,7 +60,7 @@ products = {
     },
 }
 
-@dp.message_handler(CommandStart())
+@dp.message(commands=["start"])
 async def start(message: types.Message):
     kb = InlineKeyboardMarkup(row_width=1)
     for pid, data in products.items():
