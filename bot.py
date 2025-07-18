@@ -11,8 +11,10 @@ bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot)
 logging.basicConfig(level=logging.INFO)
 
-buy_cb = CallbackData('buy', 'item')
+# callback_data для навигации и покупок
 nav_cb = CallbackData('nav', 'action', 'item')
+show_cb = CallbackData('show', 'item')  # для показа описания
+buy_cb = CallbackData('buy', 'item')    # для начала покупки
 confirm_cb = CallbackData('confirm', 'user_id', 'item_id')
 
 products = {
@@ -77,11 +79,11 @@ def main_menu_kb():
     for pid, data in products.items():
         kb.insert(types.InlineKeyboardButton(
             text=data['title'],
-            callback_data=buy_cb.new(item=pid)
+            callback_data=show_cb.new(item=pid)
         ))
     return kb
 
-def guide_kb(item_id):
+def product_kb(item_id):
     kb = types.InlineKeyboardMarkup()
     kb.add(types.InlineKeyboardButton("⬅️ Назад", callback_data=nav_cb.new(action='back', item='none')))
     kb.add(types.InlineKeyboardButton("✅ Купить", callback_data=buy_cb.new(item=item_id)))
@@ -93,30 +95,30 @@ def purchase_confirm_kb(user_id, item_id):
     return kb
 
 @dp.message_handler(commands=['start'])
-async def start(message: types.Message):
+async def cmd_start(message: types.Message):
     await message.answer("Добро пожаловать! Выберите продукт из списка ниже:", reply_markup=main_menu_kb())
 
-@dp.callback_query_handler(buy_cb.filter())
-async def show_guide(call: types.CallbackQuery, callback_data: dict):
+@dp.callback_query_handler(show_cb.filter())
+async def show_product(call: types.CallbackQuery, callback_data: dict):
     pid = callback_data['item']
     product = products[pid]
     text = (f"<b>{product['title']}</b>\n\n"
             f"{product['description']}\n\n"
             f"<b>Цена: {product['price']} USDT</b>\n\n"
-            f"Нажмите кнопку Купить, чтобы получить информацию по оплате.")
-    await call.message.edit_text(text, reply_markup=guide_kb(pid), parse_mode='HTML')
+            f"Нажмите Купить, чтобы получить инструкцию по оплате.")
+    await call.message.edit_text(text, reply_markup=product_kb(pid), parse_mode='HTML')
     await call.answer()
 
 @dp.callback_query_handler(nav_cb.filter())
-async def nav_handler(call: types.CallbackQuery, callback_data: dict):
+async def navigation_handler(call: types.CallbackQuery, callback_data: dict):
     action = callback_data['action']
     if action == 'back':
         await call.message.edit_text("Выберите продукт из списка ниже:", reply_markup=main_menu_kb())
         await call.answer("Вернулись в меню")
 
-@dp.callback_query_handler(lambda c: c.data.startswith('buy:'))
-async def process_buy(call: types.CallbackQuery):
-    pid = call.data.split(':')[1]
+@dp.callback_query_handler(buy_cb.filter())
+async def process_buy(call: types.CallbackQuery, callback_data: dict):
+    pid = callback_data['item']
     product = products[pid]
     user = call.from_user
     username = f"@{user.username}" if user.username else user.full_name
@@ -125,7 +127,7 @@ async def process_buy(call: types.CallbackQuery):
     text = (f"Вы выбрали <b>{product['title']}</b>\n"
             f"Цена: <b>{product['price']} USDT (TRC20)</b>\n\n"
             f"Оплатите на следующий адрес:\n<code>{TRC20_ADDRESS}</code>\n\n"
-            f"После оплаты нажмите внизу кнопку 'Оплатил', чтобы уведомить администратора.")
+            f"После оплаты нажмите кнопку 'Оплатил', чтобы уведомить администратора.")
     await call.message.answer(text, parse_mode='HTML')
 
     # Админ уведомление с кнопкой для подтверждения
