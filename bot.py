@@ -118,6 +118,8 @@ async def cancel_delivery(call: types.CallbackQuery):
     await bot.send_message(chat_id=int(user_id), text="❌ Оплата не подтверждена. Пожалуйста, свяжитесь с поддержкой.")
     await call.answer("Отклонено.")
 
+async def main():
+    await dp.start_polling(bot)
+
 if __name__ == '__main__':
-    from aiogram import executor
-    executor.start_polling(dp, skip_updates=True)
+    asyncio.run(main())
