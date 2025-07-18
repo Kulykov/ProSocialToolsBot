@@ -1,5 +1,6 @@
 import logging
-from aiogram import Bot, Dispatcher, executor, types
+from aiogram import Bot, Dispatcher, types
+import asyncio
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.dispatcher.filters import CommandStart
 from aiogram.utils.callback_data import CallbackData
