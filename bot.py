@@ -12,7 +12,6 @@ logging.basicConfig(level=logging.INFO)
 buy_cb = CallbackData('buy', 'item')
 nav_cb = CallbackData('nav', 'action', 'item')
 
-# Профессиональные описания товаров (без цен в главном меню)
 products = {
     'prod1': {
         'title': 'Профессиональное оформление Telegram-канала',
@@ -109,3 +108,4 @@ async def navigation(call: types.CallbackQuery, callback_data: dict):
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
+
