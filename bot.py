@@ -1,22 +1,16 @@
-import logging
-from aiogram import Bot, Dispatcher, types
 import asyncio
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram.utils.callback_data import CallbackData
+import logging
+from aiogram import Bot, Dispatcher, F
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.filters import CommandStart
 
 API_TOKEN = '8189935957:AAHIGvtVwJCnrpj2tTNCJEZbwfcYvlRYfmQ'
 ADMIN_ID = 2041956053  # Твой Telegram ID
 
 bot = Bot(token=API_TOKEN)
-dp = Dispatcher(bot)
+dp = Dispatcher()
 
-logging.basicConfig(level=logging.INFO)
-
-# Callbacks
-buy_cb = CallbackData('buy', 'item')
-payment_cb = CallbackData('payment', 'item', 'user_id')
-
-# Продукты
+# Все товары
 products = {
     'guide1': {
         'title': 'Оформление Telegram-канала как у экспертов',
@@ -57,68 +51,74 @@ products = {
         'title': 'Как вести Instagram Stories каждый день',
         'price': 2.0,
         'link': 'https://drive.google.com/file/d/1MR_ruMOMfB1xU5P-9KegA2JTn7FqXrRx/view?usp=sharing'
-    },
+    }
 }
 
-@dp.message(commands=["start"])
-async def start(message: types.Message):
+@dp.message(CommandStart())
+async def cmd_start(message: Message):
     kb = InlineKeyboardMarkup(row_width=1)
-    for pid, data in products.items():
+    for key, product in products.items():
         kb.add(InlineKeyboardButton(
-            text=f"{data['title']} — {data['price']} USDT",
-            callback_data=buy_cb.new(item=pid)
+            text=f"{product['title']} — {product['price']} USDT",
+            callback_data=f"buy:{key}"
         ))
-    await message.answer("Добро пожаловать в ProSocialToolsBot!\nВыберите гайд для покупки:", reply_markup=kb)
+    await message.answer("Добро пожаловать! Выберите гайд:", reply_markup=kb)
 
-@dp.callback_query_handler(buy_cb.filter())
-async def handle_buy(call: types.CallbackQuery, callback_data: dict):
-    pid = callback_data['item']
-    product = products[pid]
+@dp.callback_query(F.data.startswith("buy:"))
+async def buy_product(call: CallbackQuery):
+    pid = call.data.split(":")[1]
+    product = products.get(pid)
+    if not product:
+        await call.answer("Товар не найден.", show_alert=True)
+        return
 
-    payment_text = f"Вы выбрали: <b>{product['title']}</b>\n\n💵 Стоимость: <b>{product['price']} USDT</b>\n\nПереведите USDT (TRC20) на кошелёк:\n<code>TVc4ndDw68YF2PRsWkCeAJFboBmedzteXE</code>\n\nПосле оплаты нажмите кнопку ниже."
-    
-    confirm_kb = InlineKeyboardMarkup().add(
-        InlineKeyboardButton(
-            text="✅ Я оплатил",
-            callback_data=payment_cb.new(item=pid, user_id=call.from_user.id)
-        )
+    text = f"""Вы выбрали: <b>{product['title']}</b>
+💵 Стоимость: <b>{product['price']} USDT</b>
+
+Переведите USDT (TRC20) на кошелёк:
+<code>TVc4ndDw68YF2PRsWkCeAJFboBmedzteXE</code>
+
+После оплаты нажмите кнопку ниже."""
+    kb = InlineKeyboardMarkup().add(
+        InlineKeyboardButton("✅ Я оплатил", callback_data=f"paid:{pid}:{call.from_user.id}")
     )
-
-    await call.message.answer(payment_text, reply_markup=confirm_kb, parse_mode='HTML')
+    await call.message.answer(text, reply_markup=kb, parse_mode='HTML')
     await call.answer()
 
-@dp.callback_query_handler(payment_cb.filter())
-async def handle_payment_confirmation(call: types.CallbackQuery, callback_data: dict):
-    pid = callback_data['item']
-    user_id = callback_data['user_id']
-    product = products[pid]
+@dp.callback_query(F.data.startswith("paid:"))
+async def confirm_payment(call: CallbackQuery):
+    _, pid, uid = call.data.split(":")
+    product = products.get(pid)
+    if not product:
+        await call.answer("Ошибка продукта.", show_alert=True)
+        return
 
-    msg = f"❗ Пользователь @{call.from_user.username or call.from_user.id} оплатил: {product['title']}\n\nПодтвердить выдачу?"
-    
-    confirm_kb = InlineKeyboardMarkup().add(
-        InlineKeyboardButton("✅ Подтвердить", callback_data=f"confirm:{user_id}:{pid}"),
-        InlineKeyboardButton("❌ Отменить", callback_data=f"cancel:{user_id}")
+    text = f"""❗ Пользователь @{call.from_user.username or call.from_user.id} оплатил: {product['title']}
+
+Подтвердить выдачу?"""
+    kb = InlineKeyboardMarkup(row_width=2).add(
+        InlineKeyboardButton("✅ Подтвердить", callback_data=f"confirm:{uid}:{pid}"),
+        InlineKeyboardButton("❌ Отменить", callback_data=f"cancel:{uid}")
     )
+    await bot.send_message(chat_id=ADMIN_ID, text=text, reply_markup=kb)
+    await call.answer("Запрос отправлен администратору.")
 
-    await bot.send_message(chat_id=ADMIN_ID, text=msg, reply_markup=confirm_kb)
-    await call.answer("Запрос отправлен администратору. Ожидайте подтверждения.")
-
-@dp.callback_query_handler(lambda c: c.data.startswith("confirm:"))
-async def confirm_delivery(call: types.CallbackQuery):
-    _, user_id, pid = call.data.split(":")
-    product = products[pid]
-
-    await bot.send_message(chat_id=int(user_id), text=f"✅ Спасибо за оплату!\nВот ваша ссылка: {product['link']}")
+@dp.callback_query(F.data.startswith("confirm:"))
+async def admin_confirm(call: CallbackQuery):
+    _, uid, pid = call.data.split(":")
+    product = products.get(pid)
+    await bot.send_message(chat_id=int(uid), text=f"✅ Спасибо за оплату!\nВот ваша ссылка: {product['link']}")
     await call.answer("Файл отправлен покупателю.")
 
-@dp.callback_query_handler(lambda c: c.data.startswith("cancel:"))
-async def cancel_delivery(call: types.CallbackQuery):
-    _, user_id = call.data.split(":")
-    await bot.send_message(chat_id=int(user_id), text="❌ Оплата не подтверждена. Пожалуйста, свяжитесь с поддержкой.")
+@dp.callback_query(F.data.startswith("cancel:"))
+async def admin_cancel(call: CallbackQuery):
+    _, uid = call.data.split(":")
+    await bot.send_message(chat_id=int(uid), text="❌ Оплата не подтверждена. Свяжитесь с поддержкой.")
     await call.answer("Отклонено.")
 
 async def main():
+    logging.basicConfig(level=logging.INFO)
     await dp.start_polling(bot)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(main())
