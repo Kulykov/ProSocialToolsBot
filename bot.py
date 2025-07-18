@@ -5,12 +5,14 @@ import logging
 API_TOKEN = '8189935957:AAHIGvtVwJCnrpj2tTNCJEZbwfcYvlRYfmQ'
 ADMIN_ID = 2041956053
 
+TRC20_ADDRESS = 'TVc4ndDw68YF2PRsWkCeAJFboBmedzteXE'
+
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot)
 logging.basicConfig(level=logging.INFO)
 
 buy_cb = CallbackData('buy', 'item')
-purchase_cb = CallbackData('purchase', 'item')  # Новый callback для кнопки "Купить"
+purchase_cb = CallbackData('purchase', 'item')
 nav_cb = CallbackData('nav', 'action', 'item')
 
 products = {
@@ -104,10 +106,55 @@ async def show_guide(call: types.CallbackQuery, callback_data: dict):
 async def process_purchase(call: types.CallbackQuery, callback_data: dict):
     pid = callback_data['item']
     product = products[pid]
-    text = (f"Спасибо за выбор <b>{product['title']}</b>!\n"
-            f"Оплатите {product['price']} USDT по ссылке:\n{product['link']}")
-    await call.answer(cache_time=60)
+
+    user = call.from_user
+    username = f"@{user.username}" if user.username else user.full_name
+
+    # Сообщение пользователю с инфой для оплаты
+    text = (f"Вы выбрали <b>{product['title']}</b>.\n"
+            f"Цена: <b>{product['price']} USDT (TRC20)</b>\n\n"
+            f"Оплатите, пожалуйста, на следующий адрес:\n"
+            f"<code>{TRC20_ADDRESS}</code>\n\n"
+            f"После оплаты дождитесь подтверждения.")
     await call.message.answer(text, parse_mode='HTML')
+
+    # Уведомление админу о желании купить
+    admin_text = (f"Покупка:\n"
+                  f"Пользователь: {username}\n"
+                  f"ID: {user.id}\n"
+                  f"Товар: {product['title']}\n"
+                  f"Цена: {product['price']} USDT\n\n"
+                  f"Чтобы подтвердить оплату, используй команду:\n"
+                  f"/confirm {user.id} {pid}")
+    await bot.send_message(ADMIN_ID, admin_text)
+
+    await call.answer("Информация для оплаты отправлена!")
+
+@dp.message_handler(commands=['confirm'])
+async def confirm_payment(message: types.Message):
+    if message.from_user.id != ADMIN_ID:
+        await message.reply("У вас нет доступа к этой команде.")
+        return
+
+    args = message.text.split()
+    if len(args) != 3:
+        await message.reply("Использование: /confirm <user_id> <product_id>")
+        return
+
+    user_id = int(args[1])
+    product_id = args[2]
+
+    if product_id not in products:
+        await message.reply("Неверный ID товара.")
+        return
+
+    product = products[product_id]
+    try:
+        await bot.send_message(user_id,
+            f"Оплата подтверждена! Вот ваша ссылка на гайд:\n\n{product['link']}\n\nСпасибо за покупку!")
+        await message.reply(f"Гайд успешно отправлен пользователю {user_id}.")
+    except Exception as e:
+        await message.reply(f"Ошибка при отправке сообщения: {e}")
 
 @dp.callback_query_handler(nav_cb.filter())
 async def navigation(call: types.CallbackQuery, callback_data: dict):
@@ -118,4 +165,3 @@ async def navigation(call: types.CallbackQuery, callback_data: dict):
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
-
