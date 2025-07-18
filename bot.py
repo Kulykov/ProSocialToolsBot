@@ -10,6 +10,7 @@ dp = Dispatcher(bot)
 logging.basicConfig(level=logging.INFO)
 
 buy_cb = CallbackData('buy', 'item')
+purchase_cb = CallbackData('purchase', 'item')  # Новый callback для кнопки "Купить"
 nav_cb = CallbackData('nav', 'action', 'item')
 
 products = {
@@ -81,7 +82,7 @@ def main_menu_kb():
 def guide_kb(item_id):
     kb = types.InlineKeyboardMarkup()
     kb.add(types.InlineKeyboardButton("⬅️ Назад", callback_data=nav_cb.new(action='back', item='none')))
-    kb.add(types.InlineKeyboardButton("✅ Купить", callback_data=buy_cb.new(item=item_id)))
+    kb.add(types.InlineKeyboardButton("✅ Купить", callback_data=purchase_cb.new(item=item_id)))
     return kb
 
 @dp.message_handler(commands=['start'])
@@ -98,6 +99,15 @@ async def show_guide(call: types.CallbackQuery, callback_data: dict):
             f"После оплаты вы получите ссылку на гайд.")
     await call.message.edit_text(text, reply_markup=guide_kb(pid), parse_mode='HTML')
     await call.answer()
+
+@dp.callback_query_handler(purchase_cb.filter())
+async def process_purchase(call: types.CallbackQuery, callback_data: dict):
+    pid = callback_data['item']
+    product = products[pid]
+    text = (f"Спасибо за выбор <b>{product['title']}</b>!\n"
+            f"Оплатите {product['price']} USDT по ссылке:\n{product['link']}")
+    await call.answer(cache_time=60)
+    await call.message.answer(text, parse_mode='HTML')
 
 @dp.callback_query_handler(nav_cb.filter())
 async def navigation(call: types.CallbackQuery, callback_data: dict):
