@@ -1,19 +1,18 @@
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.utils.callback_data import CallbackData
-import asyncio
 import logging
 
 API_TOKEN = '8189935957:AAHIGvtVwJCnrpj2tTNCJEZbwfcYvlRYfmQ'
 ADMIN_ID = 2041956053
-TRC20_ADDRESS = 'TVc4ndDw68YF2PRsWkCeAJFboBmedzteXE'
+TRC20_WALLET = 'TVc4ndDw68YF2PRsWkCeAJFboBmedzteXE'
 
-bot = Bot(token=API_TOKEN)
+bot = Bot(token=API_TOKEN, parse_mode="HTML")
 dp = Dispatcher(bot)
 logging.basicConfig(level=logging.INFO)
 
 buy_cb = CallbackData('buy', 'item')
-confirm_cb = CallbackData('confirm', 'item')
-nav_cb = CallbackData('nav', 'action')
+nav_cb = CallbackData('nav', 'action', 'item')
+confirm_cb = CallbackData("confirm", "user_id", "item")
 
 products = {
     'prod1': {
@@ -75,22 +74,16 @@ products = {
 def main_menu_kb():
     kb = types.InlineKeyboardMarkup(row_width=1)
     for pid, data in products.items():
-        kb.add(types.InlineKeyboardButton(
+        kb.insert(types.InlineKeyboardButton(
             text=data['title'],
             callback_data=buy_cb.new(item=pid)
         ))
     return kb
 
-def guide_kb(pid):
-    kb = types.InlineKeyboardMarkup()
-    kb.add(types.InlineKeyboardButton("⬅️ Назад", callback_data=nav_cb.new(action='back')))
-    kb.add(types.InlineKeyboardButton("✅ Купить", callback_data=buy_cb.new(item=pid)))
-    return kb
-
-def paid_kb(pid):
-    kb = types.InlineKeyboardMarkup()
-    kb.add(types.InlineKeyboardButton("⬅️ В меню", callback_data=nav_cb.new(action='back')))
-    kb.add(types.InlineKeyboardButton("💸 Я оплатил", callback_data=confirm_cb.new(item=pid)))
+def guide_kb(item_id):
+    kb = types.InlineKeyboardMarkup(row_width=1)
+    kb.add(types.InlineKeyboardButton("💸 Оплатил", callback_data=f"paid_{item_id}"))
+    kb.add(types.InlineKeyboardButton("⬅️ Назад", callback_data=nav_cb.new(action='back', item='none')))
     return kb
 
 @dp.message_handler(commands=['start'])
@@ -98,35 +91,61 @@ async def start(message: types.Message):
     await message.answer("Добро пожаловать! Выберите продукт из списка ниже:", reply_markup=main_menu_kb())
 
 @dp.callback_query_handler(buy_cb.filter())
-async def process_buy(call: types.CallbackQuery, callback_data: dict):
+async def show_guide(call: types.CallbackQuery, callback_data: dict):
     pid = callback_data['item']
     product = products[pid]
-    msg = await call.message.edit_text(
-        f"Вы выбрали <b>{product['title']}</b>\n"
-        f"Цена: <b>{product['price']} USDT (TRC20)</b>\n\n"
-        f"Оплатите на адрес: <code>{TRC20_ADDRESS}</code>\n\n"
-        f"После оплаты нажмите кнопку 'Я оплатил'.",
-        reply_markup=paid_kb(pid), parse_mode='HTML')
-    await call.answer()
-    await asyncio.sleep(180)
-    try:
-        await bot.delete_message(call.message.chat.id, msg.message_id)
-    except:
-        pass
+    text = (f"<b>{product['title']}</b>\n\n"
+            f"{product['description']}\n\n"
+            f"<b>Цена: {product['price']} USDT</b>\n"
+            f"TRC20: <code>{TRC20_WALLET}</code>\n\n"
+            f"После оплаты нажмите кнопку ниже.")
+    await call.message.delete()
+    await call.message.answer(text, reply_markup=guide_kb(pid))
 
-@dp.callback_query_handler(confirm_cb.filter())
-async def confirm_payment(call: types.CallbackQuery, callback_data: dict):
-    pid = callback_data['item']
+@dp.callback_query_handler(lambda c: c.data.startswith("paid_"))
+async def confirm_request(call: types.CallbackQuery):
+    pid = call.data.split("_")[1]
     product = products[pid]
+
     user = call.from_user
-    await bot.send_message(ADMIN_ID, f"🔔 Пользователь @{user.username} ({user.id}) сообщил об оплате: {product['title']} за {product['price']} USDT")
-    await call.message.edit_text("Спасибо! Мы получили ваше уведомление. Ожидайте подтверждения от администратора.")
-    await call.answer("Ожидайте подтверждения")
+    confirm_button = types.InlineKeyboardMarkup().add(
+        types.InlineKeyboardButton("✅ Подтвердить оплату", callback_data=confirm_cb.new(user_id=user.id, item=pid))
+    )
+
+    await bot.send_message(
+        ADMIN_ID,
+        f"📬 Пользователь @{user.username or 'без username'} (ID: <code>{user.id}</code>) заявил об оплате!\n"
+        f"📦 Товар: <b>{product['title']}</b>\n"
+        f"💰 Цена: {product['price']} USDT\n"
+        f"💳 TRC20 адрес: <code>{TRC20_WALLET}</code>",
+        reply_markup=confirm_button
+    )
+
+    await call.message.answer("Заявка отправлена администратору. Ожидайте подтверждения ✅")
+    await call.answer()
+
+@dp.callback_query_handler(lambda c: c.data.startswith("confirm:"))
+async def approve_payment(call: types.CallbackQuery):
+    _, user_id, pid = call.data.split(":")
+    product = products[pid]
+
+    try:
+        await bot.send_message(
+            int(user_id),
+            f"✅ Оплата подтверждена!\n\nВот ваша ссылка на гайд:\n{product['link']}"
+        )
+        await call.message.edit_text(f"Оплата по товару <b>{product['title']}</b> подтверждена ✅")
+        await call.answer("Подтверждение отправлено.")
+    except Exception as e:
+        await call.answer("Ошибка: не удалось отправить гайд пользователю.")
+        print(f"Ошибка отправки: {e}")
 
 @dp.callback_query_handler(nav_cb.filter())
 async def navigation(call: types.CallbackQuery, callback_data: dict):
-    await call.message.edit_text("Выберите продукт из списка ниже:", reply_markup=main_menu_kb())
-    await call.answer()
+    action = callback_data['action']
+    if action == 'back':
+        await call.message.delete()
+        await call.message.answer("Выберите продукт из списка ниже:", reply_markup=main_menu_kb())
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
