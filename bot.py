@@ -12,8 +12,8 @@ dp = Dispatcher(bot)
 logging.basicConfig(level=logging.INFO)
 
 buy_cb = CallbackData('buy', 'item')
-purchase_cb = CallbackData('purchase', 'item')
 nav_cb = CallbackData('nav', 'action', 'item')
+confirm_cb = CallbackData('confirm', 'user_id', 'item_id')
 
 products = {
     'prod1': {
@@ -84,7 +84,12 @@ def main_menu_kb():
 def guide_kb(item_id):
     kb = types.InlineKeyboardMarkup()
     kb.add(types.InlineKeyboardButton("⬅️ Назад", callback_data=nav_cb.new(action='back', item='none')))
-    kb.add(types.InlineKeyboardButton("✅ Купить", callback_data=purchase_cb.new(item=item_id)))
+    kb.add(types.InlineKeyboardButton("✅ Купить", callback_data=buy_cb.new(item=item_id)))
+    return kb
+
+def purchase_confirm_kb(user_id, item_id):
+    kb = types.InlineKeyboardMarkup()
+    kb.add(types.InlineKeyboardButton("Подтвердить оплату", callback_data=confirm_cb.new(user_id=user_id, item_id=item_id)))
     return kb
 
 @dp.message_handler(commands=['start'])
@@ -98,70 +103,66 @@ async def show_guide(call: types.CallbackQuery, callback_data: dict):
     text = (f"<b>{product['title']}</b>\n\n"
             f"{product['description']}\n\n"
             f"<b>Цена: {product['price']} USDT</b>\n\n"
-            f"После оплаты вы получите ссылку на гайд.")
+            f"Нажмите кнопку Купить, чтобы получить информацию по оплате.")
     await call.message.edit_text(text, reply_markup=guide_kb(pid), parse_mode='HTML')
     await call.answer()
 
-@dp.callback_query_handler(purchase_cb.filter())
-async def process_purchase(call: types.CallbackQuery, callback_data: dict):
-    pid = callback_data['item']
-    product = products[pid]
-
-    user = call.from_user
-    username = f"@{user.username}" if user.username else user.full_name
-
-    # Сообщение пользователю с инфой для оплаты
-    text = (f"Вы выбрали <b>{product['title']}</b>.\n"
-            f"Цена: <b>{product['price']} USDT (TRC20)</b>\n\n"
-            f"Оплатите, пожалуйста, на следующий адрес:\n"
-            f"<code>{TRC20_ADDRESS}</code>\n\n"
-            f"После оплаты дождитесь подтверждения.")
-    await call.message.answer(text, parse_mode='HTML')
-
-    # Уведомление админу о желании купить
-    admin_text = (f"Покупка:\n"
-                  f"Пользователь: {username}\n"
-                  f"ID: {user.id}\n"
-                  f"Товар: {product['title']}\n"
-                  f"Цена: {product['price']} USDT\n\n"
-                  f"Чтобы подтвердить оплату, используй команду:\n"
-                  f"/confirm {user.id} {pid}")
-    await bot.send_message(ADMIN_ID, admin_text)
-
-    await call.answer("Информация для оплаты отправлена!")
-
-@dp.message_handler(commands=['confirm'])
-async def confirm_payment(message: types.Message):
-    if message.from_user.id != ADMIN_ID:
-        await message.reply("У вас нет доступа к этой команде.")
-        return
-
-    args = message.text.split()
-    if len(args) != 3:
-        await message.reply("Использование: /confirm <user_id> <product_id>")
-        return
-
-    user_id = int(args[1])
-    product_id = args[2]
-
-    if product_id not in products:
-        await message.reply("Неверный ID товара.")
-        return
-
-    product = products[product_id]
-    try:
-        await bot.send_message(user_id,
-            f"Оплата подтверждена! Вот ваша ссылка на гайд:\n\n{product['link']}\n\nСпасибо за покупку!")
-        await message.reply(f"Гайд успешно отправлен пользователю {user_id}.")
-    except Exception as e:
-        await message.reply(f"Ошибка при отправке сообщения: {e}")
-
 @dp.callback_query_handler(nav_cb.filter())
-async def navigation(call: types.CallbackQuery, callback_data: dict):
+async def nav_handler(call: types.CallbackQuery, callback_data: dict):
     action = callback_data['action']
     if action == 'back':
         await call.message.edit_text("Выберите продукт из списка ниже:", reply_markup=main_menu_kb())
         await call.answer("Вернулись в меню")
 
+@dp.callback_query_handler(lambda c: c.data.startswith('buy:'))
+async def process_buy(call: types.CallbackQuery):
+    pid = call.data.split(':')[1]
+    product = products[pid]
+    user = call.from_user
+    username = f"@{user.username}" if user.username else user.full_name
+
+    # Отправляем пользователю инструкцию по оплате
+    text = (f"Вы выбрали <b>{product['title']}</b>\n"
+            f"Цена: <b>{product['price']} USDT (TRC20)</b>\n\n"
+            f"Оплатите на следующий адрес:\n<code>{TRC20_ADDRESS}</code>\n\n"
+            f"После оплаты нажмите внизу кнопку 'Оплатил', чтобы уведомить администратора.")
+    await call.message.answer(text, parse_mode='HTML')
+
+    # Админ уведомление с кнопкой для подтверждения
+    admin_text = (f"Новый запрос на покупку:\n"
+                  f"Пользователь: {username}\n"
+                  f"ID: {user.id}\n"
+                  f"Товар: {product['title']}\n"
+                  f"Цена: {product['price']} USDT\n\n"
+                  f"Подтвердите оплату, нажав кнопку ниже.")
+    await bot.send_message(ADMIN_ID, admin_text, reply_markup=purchase_confirm_kb(user.id, pid))
+
+    await call.answer("Инструкция по оплате отправлена!")
+
+@dp.callback_query_handler(confirm_cb.filter())
+async def confirm_payment(call: types.CallbackQuery, callback_data: dict):
+    if call.from_user.id != ADMIN_ID:
+        await call.answer("У вас нет доступа к этой кнопке.", show_alert=True)
+        return
+
+    user_id = int(callback_data['user_id'])
+    item_id = callback_data['item_id']
+
+    if item_id not in products:
+        await call.answer("Товар не найден.", show_alert=True)
+        return
+
+    product = products[item_id]
+
+    try:
+        # Отправляем гайд покупателю
+        await bot.send_message(user_id,
+            f"Оплата подтверждена! Вот ваша ссылка на гайд:\n\n{product['link']}\n\nСпасибо за покупку!")
+        await call.answer("Гайд отправлен покупателю!")
+        await call.message.edit_reply_markup(reply_markup=None)  # Убираем кнопку подтверждения после использования
+    except Exception as e:
+        await call.answer(f"Ошибка при отправке: {e}", show_alert=True)
+
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
+
