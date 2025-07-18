@@ -1,123 +1,79 @@
 import asyncio
-import logging
-from aiogram import Bot, Dispatcher, F
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram.filters import CommandStart
+from aiogram import Bot, Dispatcher, F, types
+from aiogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.enums.parse_mode import ParseMode
+from aiogram.utils.callback_data import CallbackData
 
 API_TOKEN = '8189935957:AAHIGvtVwJCnrpj2tTNCJEZbwfcYvlRYfmQ'
-ADMIN_ID = 2041956053  # Твой Telegram ID
+ADMIN_ID = 2041956053
+USDT_WALLET = 'TVc4ndDw68YF2PRsWkCeAJFboBmedzteXE'
 
-bot = Bot(token=API_TOKEN)
+bot = Bot(token=API_TOKEN, parse_mode=ParseMode.HTML)
 dp = Dispatcher()
 
-# Все товары
+# Список товаров
 products = {
-    'guide1': {
-        'title': 'Оформление Telegram-канала как у экспертов',
-        'price': 2.5,
-        'link': 'https://drive.google.com/file/d/1nkEJGzW5ZyOhkX0lcUhWk6dknVe-Bu4i/view?usp=sharing'
-    },
-    'guide2': {
-        'title': 'Оформление и ведение Instagram как у экспертов',
-        'price': 3.0,
-        'link': 'https://drive.google.com/file/d/1P5MKPuwz7TcVRGhFPUNgkewkD4F3DMWM/view?usp=sharing'
-    },
-    'guide3': {
-        'title': 'Оформление и продвижение Telegram-канала',
-        'price': 3.0,
-        'link': 'https://drive.google.com/file/d/1ieaIVMBPTK4VJxEMzNd8B4gBrPTI9pgS/view?usp=sharing'
-    },
-    'guide4': {
-        'title': 'Пакет описаний для Instagram и Telegram',
-        'price': 1.5,
-        'link': 'https://drive.google.com/file/d/1QiGnK9mT1xFfJN48wHx5uD4fPkWbeeuz/view?usp=sharing'
-    },
-    'guide5': {
-        'title': 'Контент на 7 дней — шаблоны постов и сторис',
-        'price': 2.0,
-        'link': 'https://drive.google.com/file/d/1ilx4yb5BTn6y181Cwzl84gtJ_f6zzvK3/view?usp=sharing'
-    },
-    'guide6': {
-        'title': 'Скрипты для Telegram-продаж',
-        'price': 2.0,
-        'link': 'https://drive.google.com/file/d/1fWshzKpqpDBozKwsBCwCuV-9F6BKex4N/view?usp=sharing'
-    },
-    'guide7': {
-        'title': '10 ошибок при оформлении профиля и как их исправить',
-        'price': 1.5,
-        'link': 'https://drive.google.com/file/d/1MgICSvvxYZe50xra5K2eVwCZ4Dmr6lLV/view?usp=sharing'
-    },
-    'guide8': {
-        'title': 'Как вести Instagram Stories каждый день',
-        'price': 2.0,
-        'link': 'https://drive.google.com/file/d/1MR_ruMOMfB1xU5P-9KegA2JTn7FqXrRx/view?usp=sharing'
-    }
+    'guide1': {'title': 'Оформление Telegram-канала как у экспертов', 'price': 2.5, 'link': 'https://drive.google.com/file/d/1nkEJGzW5ZyOhkX0lcUhWk6dknVe-Bu4i/view?usp=sharing'},
+    'guide2': {'title': 'Оформление и ведение Instagram как у экспертов', 'price': 3.0, 'link': 'https://drive.google.com/file/d/1P5MKPuwz7TcVRGhFPUNgkewkD4F3DMWM/view?usp=sharing'},
+    'guide3': {'title': 'Оформление и продвижение Telegram-канала', 'price': 3.0, 'link': 'https://drive.google.com/file/d/1ieaIVMBPTK4VJxEMzNd8B4gBrPTI9pgS/view?usp=sharing'},
+    'guide4': {'title': 'Пакет описаний для Instagram и Telegram', 'price': 1.5, 'link': 'https://drive.google.com/file/d/1QiGnK9mT1xFfJN48wHx5uD4fPkWbeeuz/view?usp=sharing'},
+    'guide5': {'title': 'Контент на 7 дней — шаблоны постов и сторис', 'price': 2.0, 'link': 'https://drive.google.com/file/d/1ilx4yb5BTn6y181Cwzl84gtJ_f6zzvK3/view?usp=sharing'},
+    'guide6': {'title': 'Скрипты для Telegram-продаж', 'price': 2.0, 'link': 'https://drive.google.com/file/d/1fWshzKpqpDBozKwsBCwCuV-9F6BKex4N/view?usp=sharing'},
+    'guide7': {'title': '10 ошибок при оформлении профиля и как их исправить', 'price': 1.5, 'link': 'https://drive.google.com/file/d/1MgICSvvxYZe50xra5K2eVwCZ4Dmr6lLV/view?usp=sharing'},
+    'guide8': {'title': 'Как вести Instagram Stories каждый день', 'price': 2.0, 'link': 'https://drive.google.com/file/d/1MR_ruMOMfB1xU5P-9KegA2JTn7FqXrRx/view?usp=sharing'},
 }
 
-@dp.message(CommandStart())
-async def cmd_start(message: Message):
-    kb = InlineKeyboardMarkup(row_width=1)
-    for key, product in products.items():
-        kb.add(InlineKeyboardButton(
-            text=f"{product['title']} — {product['price']} USDT",
-            callback_data=f"buy:{key}"
-        ))
-    await message.answer("Добро пожаловать! Выберите гайд:", reply_markup=kb)
+@dp.message(F.text == "/start")
+async def start(message: Message):
+    kb = InlineKeyboardMarkup()
+    for pid, item in products.items():
+        kb.add(InlineKeyboardButton(text=f"{item['title']} — {item['price']} USDT", callback_data=f"buy:{pid}"))
+    await message.answer("Добро пожаловать!\nВыберите товар для покупки:", reply_markup=kb)
 
 @dp.callback_query(F.data.startswith("buy:"))
-async def buy_product(call: CallbackQuery):
-    pid = call.data.split(":")[1]
-    product = products.get(pid)
-    if not product:
-        await call.answer("Товар не найден.", show_alert=True)
-        return
-
-    text = f"""Вы выбрали: <b>{product['title']}</b>
-💵 Стоимость: <b>{product['price']} USDT</b>
-
-Переведите USDT (TRC20) на кошелёк:
-<code>TVc4ndDw68YF2PRsWkCeAJFboBmedzteXE</code>
-
-После оплаты нажмите кнопку ниже."""
-    kb = InlineKeyboardMarkup().add(
-        InlineKeyboardButton("✅ Я оплатил", callback_data=f"paid:{pid}:{call.from_user.id}")
+async def buy_item(callback: types.CallbackQuery):
+    pid = callback.data.split(":")[1]
+    product = products[pid]
+    text = (
+        f"<b>{product['title']}</b>\n"
+        f"💰 Цена: {product['price']} USDT\n\n"
+        f"Переведите USDT (TRC20) на кошелёк:\n<code>{USDT_WALLET}</code>\n\n"
+        "После оплаты нажмите кнопку ниже:"
     )
-    await call.message.answer(text, reply_markup=kb, parse_mode='HTML')
-    await call.answer()
+    kb = InlineKeyboardMarkup().add(
+        InlineKeyboardButton(text="✅ Я оплатил", callback_data=f"paid:{pid}:{callback.from_user.id}")
+    )
+    await callback.message.answer(text, reply_markup=kb)
+    await callback.answer()
 
 @dp.callback_query(F.data.startswith("paid:"))
-async def confirm_payment(call: CallbackQuery):
-    _, pid, uid = call.data.split(":")
-    product = products.get(pid)
-    if not product:
-        await call.answer("Ошибка продукта.", show_alert=True)
-        return
-
-    text = f"""❗ Пользователь @{call.from_user.username or call.from_user.id} оплатил: {product['title']}
-
-Подтвердить выдачу?"""
-    kb = InlineKeyboardMarkup(row_width=2).add(
+async def paid(callback: types.CallbackQuery):
+    _, pid, uid = callback.data.split(":")
+    product = products[pid]
+    username = callback.from_user.username or f"id{callback.from_user.id}"
+    text = f"❗️ Пользователь @{username} оплатил <b>{product['title']}</b>\nПодтвердить выдачу?"
+    kb = InlineKeyboardMarkup().add(
         InlineKeyboardButton("✅ Подтвердить", callback_data=f"confirm:{uid}:{pid}"),
         InlineKeyboardButton("❌ Отменить", callback_data=f"cancel:{uid}")
     )
-    await bot.send_message(chat_id=ADMIN_ID, text=text, reply_markup=kb)
-    await call.answer("Запрос отправлен администратору.")
+    await bot.send_message(ADMIN_ID, text, reply_markup=kb)
+    await callback.message.answer("Запрос отправлен администратору.")
+    await callback.answer()
 
 @dp.callback_query(F.data.startswith("confirm:"))
-async def admin_confirm(call: CallbackQuery):
-    _, uid, pid = call.data.split(":")
-    product = products.get(pid)
-    await bot.send_message(chat_id=int(uid), text=f"✅ Спасибо за оплату!\nВот ваша ссылка: {product['link']}")
-    await call.answer("Файл отправлен покупателю.")
+async def confirm(callback: types.CallbackQuery):
+    _, uid, pid = callback.data.split(":")
+    product = products[pid]
+    await bot.send_message(uid, f"✅ Спасибо за оплату!\nВот ваша ссылка: {product['link']}")
+    await callback.answer("Отправлено покупателю.")
 
 @dp.callback_query(F.data.startswith("cancel:"))
-async def admin_cancel(call: CallbackQuery):
-    _, uid = call.data.split(":")
-    await bot.send_message(chat_id=int(uid), text="❌ Оплата не подтверждена. Свяжитесь с поддержкой.")
-    await call.answer("Отклонено.")
+async def cancel(callback: types.CallbackQuery):
+    _, uid = callback.data.split(":")
+    await bot.send_message(uid, "❌ Оплата не подтверждена. Свяжитесь с поддержкой.")
+    await callback.answer("Отклонено.")
 
 async def main():
-    logging.basicConfig(level=logging.INFO)
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
