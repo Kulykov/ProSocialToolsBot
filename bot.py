@@ -2,14 +2,16 @@ from aiogram import Bot, Dispatcher, executor, types
 import logging
 
 API_TOKEN = '8189935957:AAHIGvtVwJCnrpj2tTNCJEZbwfcYvlRYfmQ'
+ADMIN_ID = 2041956053
 
-bot = Bot(token=API_TOKEN, parse_mode="HTML")
+# Инициализация бота и диспетчера
+bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot)
 logging.basicConfig(level=logging.INFO)
 
-# Главное меню с соцсетями
+# Главное меню с кнопками соцсетей (каждая на отдельной строке)
 def social_menu():
-    kb = types.InlineKeyboardMarkup(row_width=2)
+    kb = types.InlineKeyboardMarkup(row_width=1)
     kb.add(
         types.InlineKeyboardButton("Instagram", callback_data="social_instagram"),
         types.InlineKeyboardButton("Telegram", callback_data="social_telegram"),
@@ -18,36 +20,32 @@ def social_menu():
     )
     return kb
 
-# Кнопка возврата в главное меню
-def back_to_menu_kb():
-    kb = types.InlineKeyboardMarkup()
-    kb.add(types.InlineKeyboardButton("🔙 В меню", callback_data="back_to_menu"))
-    return kb
-
 @dp.message_handler(commands=['start'])
-async def start(message: types.Message):
-    await message.answer("Добро пожаловать! Выберите соцсеть:", reply_markup=social_menu())
+async def start_handler(message: types.Message):
+    await message.answer(
+        "Добро пожаловать! Выберите платформу, для которой хотите получить материалы:",
+        reply_markup=social_menu()
+    )
 
-@dp.callback_query_handler(lambda c: c.data.startswith('social_'))
+@dp.callback_query_handler(lambda call: call.data.startswith("social_"))
 async def handle_social_click(call: types.CallbackQuery):
-    social_name = {
-        'social_instagram': "Instagram",
-        'social_telegram': "Telegram",
-        'social_tiktok': "TikTok",
-        'social_threads': "Threads"
-    }.get(call.data, "Unknown")
-    
+    social = call.data.split("_")[1].capitalize()
     await call.message.edit_text(
-        f"Вы выбрали <b>{social_name}</b>. Скоро здесь появятся гайды и инструменты.",
-        reply_markup=back_to_menu_kb()
+        f"📌 Раздел <b>{social}</b> в разработке. Возвращайтесь позже!",
+        parse_mode="HTML",
+        reply_markup=types.InlineKeyboardMarkup().add(
+            types.InlineKeyboardButton("🔙 Вернуться в меню", callback_data="back_to_menu")
+        )
     )
     await call.answer()
 
-@dp.callback_query_handler(lambda c: c.data == 'back_to_menu')
+@dp.callback_query_handler(lambda call: call.data == "back_to_menu")
 async def back_to_menu(call: types.CallbackQuery):
-    await call.message.edit_text("Выберите соцсеть:", reply_markup=social_menu())
+    await call.message.edit_text(
+        "Выберите платформу, для которой хотите получить материалы:",
+        reply_markup=social_menu()
+    )
     await call.answer()
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
-
