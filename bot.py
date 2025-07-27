@@ -65,11 +65,9 @@ async def select_payment(call: types.CallbackQuery, callback_data: dict):
         kb.add(types.InlineKeyboardButton(method_names[method], callback_data=pay_cb.new(social=s, item=str(i), method=method)))
     kb.add(types.InlineKeyboardButton("⬅️ Назад", callback_data=s))
     await call.message.edit_text(
-        f"<b>{title}</b>
-
-Цена: <b>{price} USDT</b>
-
-Выберите способ оплаты:",
+        f"<b>{title}</b>\n\n"
+        f"Цена: <b>{price} USDT</b>\n\n"
+        f"Выберите способ оплаты:",
         reply_markup=kb
     )
 
@@ -80,13 +78,11 @@ async def payment_details(call: types.CallbackQuery, callback_data: dict):
     method = callback_data['method']
     title, price, _ = data[s][i]
     text = (
-        f"<b>{title}</b>
-Цена: <b>{price} USDT</b>
-
-Реквизиты для оплаты:
-{payment_methods[method]}
-
-После оплаты нажмите кнопку ниже."
+        f"<b>{title}</b>\n"
+        f"Цена: <b>{price} USDT</b>\n\n"
+        f"Реквизиты для оплаты:\n"
+        f"{payment_methods[method]}\n\n"
+        f"После оплаты нажмите кнопку ниже."
     )
     kb = types.InlineKeyboardMarkup()
     kb.add(types.InlineKeyboardButton("✅ Я оплатил", callback_data=confirm_cb.new(social=s, item=str(i), user_id=str(call.from_user.id))))
@@ -110,7 +106,8 @@ async def confirm_payment(call: types.CallbackQuery, callback_data: dict):
 async def deliver(call: types.CallbackQuery):
     _, user_id, file_link = call.data.split(':', 2)
     await bot.send_message(user_id, f"Спасибо за оплату! Вот ваш файл:\n{file_link}")
-    await call.message.delete()
+    await call.message.edit_text("Оплата подтверждена и файл отправлен.")
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
+
