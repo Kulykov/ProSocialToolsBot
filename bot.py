@@ -77,7 +77,12 @@ async def show_items(call: types.CallbackQuery):
     kb = types.InlineKeyboardMarkup(row_width=1)
     for i, (title, price, _) in enumerate(items):
         kb.add(types.InlineKeyboardButton(f"{title.splitlines()[0]}", callback_data=buy_cb.new(social=call.data, item=str(i))))
+    kb.add(types.InlineKeyboardButton("⬅️ Назад", callback_data='main'))
     await call.message.edit_text(f"<b>{call.data}</b> — выберите гайд:", reply_markup=kb)
+
+@dp.callback_query_handler(lambda c: c.data == 'main')
+async def back_to_main(call: types.CallbackQuery):
+    await call.message.edit_text("Выберите социальную сеть:", reply_markup=main_menu())
 
 @dp.callback_query_handler(buy_cb.filter())
 async def select_payment(call: types.CallbackQuery, callback_data: dict):
@@ -120,20 +125,17 @@ async def confirm_payment(call: types.CallbackQuery, callback_data: dict):
     user_id = int(callback_data['user_id'])
     title, _, file_link = data[s][i]
 
-    await bot.send_message(ADMIN_ID, f"📥 <b>Заявка на оплату</b>\n\n"
-                                     f"Пользователь: <code>{user_id}</code>\n"
-                                     f"Товар: <b>{title}</b>\nСеть: {s}",
-                           reply_markup=types.InlineKeyboardMarkup().add(
-                               types.InlineKeyboardButton("Подтвердить", callback_data=f'deliver:{user_id}:{file_link}')
-                           ))
+    await bot.send_message(ADMIN_ID, f"Поступила заявка на оплату\n\nПользователь: <code>{user_id}</code>\nТовар: <b>{title}</b>\nСеть: {s}", reply_markup=types.InlineKeyboardMarkup().add(
+        types.InlineKeyboardButton("Подтвердить", callback_data=f'deliver:{user_id}:{file_link}')
+    ))
 
     await call.message.edit_text("Ожидается подтверждение администратора…")
 
 @dp.callback_query_handler(lambda c: c.data.startswith('deliver:'))
 async def deliver(call: types.CallbackQuery):
     _, user_id, file_link = call.data.split(':', 2)
-    await bot.send_message(user_id, f"✅ Спасибо за оплату!\nВот ваш файл:\n{file_link}")
-    await call.message.edit_text("Оплата подтверждена и файл отправлен.")
+    await bot.send_message(user_id, f"✅ Спасибо за оплату!\n\nВот ваш файл:\n{file_link}")
+    await call.message.edit_text("Оплата подтверждена. Файл отправлен.")
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
