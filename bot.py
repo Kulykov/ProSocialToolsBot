@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO)
 buy_cb = CallbackData('buy', 'social', 'item')
 pay_cb = CallbackData('pay', 'social', 'item', 'method')
 confirm_cb = CallbackData('confirm', 'social', 'item')
-deliver_cb = CallbackData('deliver', 'social', 'item', 'user')
+deliver_cb = CallbackData('deliver', 'social', 'item', 'user', 'msg')
 
 from collections import defaultdict
 data = defaultdict(list)
@@ -127,31 +127,34 @@ async def confirm_payment(call: types.CallbackQuery, callback_data: dict):
     s = callback_data['social']
     i = int(callback_data['item'])
     user_id = call.from_user.id
-    title, _, file_link = data[s][i]
-
-    # Кнопка подтверждения админу
+    title, price, _ = data[s][i]
+    confirmation_msg = await call.message.edit_text("Ожидается подтверждение администратора…")
     kb = types.InlineKeyboardMarkup()
-    kb.add(types.InlineKeyboardButton("✅ Подтвердить", callback_data=deliver_cb.new(social=s, item=str(i), user=str(user_id))))
-
+    kb.add(types.InlineKeyboardButton(
+        "✅ Подтвердить",
+        callback_data=deliver_cb.new(social=s, item=str(i), user=str(user_id), msg=str(confirmation_msg.message_id))
+    ))
     await bot.send_message(
         ADMIN_ID,
-        f"🛒 <b>Заявка на оплату</b>\n\n"
+        f"🛒 Заявка на подтверждение товара\n"
         f"👤 Пользователь: <code>{user_id}</code>\n"
-        f"📦 Товар: <b>{title}</b>\n"
-        f"📱 Сеть: {s}",
+        f"📦 Название: <b>{title}</b>\n"
+        f"💵 Цена: <b>{price} USDT</b>\n"
+        f"💳 Способ оплаты: <b>Ожидается</b>",
         reply_markup=kb
     )
-
-    await call.message.edit_text("Ожидается подтверждение администратора…")
 
 @dp.callback_query_handler(deliver_cb.filter())
 async def deliver_file(call: types.CallbackQuery, callback_data: dict):
     s = callback_data['social']
     i = int(callback_data['item'])
     user_id = int(callback_data['user'])
+    msg_id = int(callback_data['msg'])
     _, _, file_link = data[s][i]
-
-    # Пользователю
+    try:
+        await bot.delete_message(chat_id=user_id, message_id=msg_id)
+    except Exception as e:
+        logging.warning(f"Не удалось удалить сообщение: {e}")
     await bot.send_message(
         user_id,
         f"✅ Спасибо за оплату!\nВот ваш файл:\n{file_link}",
@@ -159,8 +162,6 @@ async def deliver_file(call: types.CallbackQuery, callback_data: dict):
             types.InlineKeyboardButton("⬅️ Главное меню", callback_data='main')
         )
     )
-
-    # Админу
     await call.message.edit_text("✅ Оплата подтверждена, гайд выдан.")
 
 if __name__ == '__main__':
