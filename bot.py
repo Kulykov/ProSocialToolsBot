@@ -11,7 +11,11 @@ logging.basicConfig(level=logging.INFO)
 
 buy_cb = CallbackData('buy', 'social', 'item')
 pay_cb = CallbackData('pay', 'social', 'item', 'method')
-confirm_cb = CallbackData('confirm', 'social', 'item', 'user_id')
+confirm_cb = CallbackData('confirm', 'social', 'item')
+deliver_cb = CallbackData('deliver', 'social', 'item', 'user')
+
+from collections import defaultdict
+data = defaultdict(list)
 
 data = {
     'Instagram': [
@@ -114,31 +118,50 @@ async def payment_details(call: types.CallbackQuery, callback_data: dict):
         f"После оплаты нажмите кнопку ниже."
     )
     kb = types.InlineKeyboardMarkup()
-    kb.add(types.InlineKeyboardButton("✅ Я оплатил", callback_data=confirm_cb.new(social=s, item=str(i), user_id=str(call.from_user.id))))
+    kb.add(types.InlineKeyboardButton("✅ Я оплатил", callback_data=confirm_cb.new(social=s, item=str(i))))
     kb.add(types.InlineKeyboardButton("⬅️ Назад", callback_data=buy_cb.new(social=s, item=str(i))))
-    return await call.message.edit_text(text, reply_markup=kb)
+    await call.message.edit_text(text, reply_markup=kb)
 
 @dp.callback_query_handler(confirm_cb.filter())
 async def confirm_payment(call: types.CallbackQuery, callback_data: dict):
     s = callback_data['social']
     i = int(callback_data['item'])
-    user_id = int(callback_data['user_id'])
+    user_id = call.from_user.id
     title, _, file_link = data[s][i]
 
-    await bot.send_message(ADMIN_ID, f"🛒 Новая заявка на оплату\n\n👤 Пользователь: <code>{user_id}</code>\n📦 Товар: <b>{title}</b>\n📱 Сеть: {s}", reply_markup=types.InlineKeyboardMarkup().add(
-        types.InlineKeyboardButton("✅ Подтвердить", callback_data=f'deliver:{user_id}:{file_link}:{s}')
-    ))
+    # Кнопка подтверждения админу
+    kb = types.InlineKeyboardMarkup()
+    kb.add(types.InlineKeyboardButton("✅ Подтвердить", callback_data=deliver_cb.new(social=s, item=str(i), user=str(user_id))))
+
+    await bot.send_message(
+        ADMIN_ID,
+        f"🛒 <b>Заявка на оплату</b>\n\n"
+        f"👤 Пользователь: <code>{user_id}</code>\n"
+        f"📦 Товар: <b>{title}</b>\n"
+        f"📱 Сеть: {s}",
+        reply_markup=kb
+    )
 
     await call.message.edit_text("Ожидается подтверждение администратора…")
 
-@dp.callback_query_handler(lambda c: c.data.startswith('deliver:'))
-async def deliver(call: types.CallbackQuery):
-    _, user_id, file_link, s = call.data.split(':', 3)
-    user_id = int(user_id)
-    await bot.send_message(user_id, f"✅ Спасибо за оплату!\nВот ваш файл:\n{file_link}", reply_markup=types.InlineKeyboardMarkup().add(
-        types.InlineKeyboardButton("⬅️ Главное меню", callback_data='main')
-    ))
-    await call.message.edit_text("Оплата подтверждена и файл отправлен.")
+@dp.callback_query_handler(deliver_cb.filter())
+async def deliver_file(call: types.CallbackQuery, callback_data: dict):
+    s = callback_data['social']
+    i = int(callback_data['item'])
+    user_id = int(callback_data['user'])
+    _, _, file_link = data[s][i]
+
+    # Пользователю
+    await bot.send_message(
+        user_id,
+        f"✅ Спасибо за оплату!\nВот ваш файл:\n{file_link}",
+        reply_markup=types.InlineKeyboardMarkup().add(
+            types.InlineKeyboardButton("⬅️ Главное меню", callback_data='main')
+        )
+    )
+
+    # Админу
+    await call.message.edit_text("✅ Оплата подтверждена, гайд выдан.")
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
