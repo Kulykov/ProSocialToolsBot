@@ -11,8 +11,8 @@ logging.basicConfig(level=logging.INFO)
 
 buy_cb = CallbackData('buy', 'social', 'item')
 pay_cb = CallbackData('pay', 'social', 'item', 'method')
-confirm_cb = CallbackData('confirm', 'social', 'item')
-deliver_cb = CallbackData('deliver', 'social', 'item', 'user', 'msg')
+confirm_cb = CallbackData('confirm', 'social', 'item', 'method')
+deliver_cb = CallbackData('deliver', 'social', 'item', 'user', 'msg', 'method')
 
 from collections import defaultdict
 data = defaultdict(list)
@@ -118,7 +118,7 @@ async def payment_details(call: types.CallbackQuery, callback_data: dict):
         f"После оплаты нажмите кнопку ниже."
     )
     kb = types.InlineKeyboardMarkup()
-    kb.add(types.InlineKeyboardButton("✅ Я оплатил", callback_data=confirm_cb.new(social=s, item=str(i))))
+    kb.add(types.InlineKeyboardButton("✅ Я оплатил", callback_data=confirm_cb.new(social=s, item=str(i), method=method)))
     kb.add(types.InlineKeyboardButton("⬅️ Назад", callback_data=buy_cb.new(social=s, item=str(i))))
     await call.message.edit_text(text, reply_markup=kb)
 
@@ -126,13 +126,14 @@ async def payment_details(call: types.CallbackQuery, callback_data: dict):
 async def confirm_payment(call: types.CallbackQuery, callback_data: dict):
     s = callback_data['social']
     i = int(callback_data['item'])
+    method = callback_data['method']
     user_id = call.from_user.id
     title, price, _ = data[s][i]
     confirmation_msg = await call.message.edit_text("Ожидается подтверждение администратора…")
     kb = types.InlineKeyboardMarkup()
     kb.add(types.InlineKeyboardButton(
         "✅ Подтвердить",
-        callback_data=deliver_cb.new(social=s, item=str(i), user=str(user_id), msg=str(confirmation_msg.message_id))
+        callback_data=deliver_cb.new(social=s, item=str(i), user=str(user_id), msg=str(confirmation_msg.message_id), method=method)
     ))
     await bot.send_message(
         ADMIN_ID,
@@ -140,7 +141,7 @@ async def confirm_payment(call: types.CallbackQuery, callback_data: dict):
         f"👤 Пользователь: <code>{user_id}</code>\n"
         f"📦 Название: <b>{title}</b>\n"
         f"💵 Цена: <b>{price} USDT</b>\n"
-        f"💳 Способ оплаты: <b>Ожидается</b>",
+        f"💳 Способ оплаты: <b>{method_names[method]}</b>",
         reply_markup=kb
     )
 
@@ -150,6 +151,7 @@ async def deliver_file(call: types.CallbackQuery, callback_data: dict):
     i = int(callback_data['item'])
     user_id = int(callback_data['user'])
     msg_id = int(callback_data['msg'])
+    method = callback_data['method']
     _, _, file_link = data[s][i]
     try:
         await bot.delete_message(chat_id=user_id, message_id=msg_id)
@@ -166,3 +168,4 @@ async def deliver_file(call: types.CallbackQuery, callback_data: dict):
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
+
