@@ -84,7 +84,7 @@ async def show_items(call: types.CallbackQuery):
 
 @dp.callback_query_handler(lambda c: c.data == 'main')
 async def go_main(call: types.CallbackQuery):
-    await call.message.edit_text("Выберите социальную сеть:", reply_markup=main_menu())
+    await call.message.answer("Выберите социальную сеть:", reply_markup=main_menu())
 
 @dp.callback_query_handler(buy_cb.filter())
 async def select_payment(call: types.CallbackQuery, callback_data: dict):
@@ -128,9 +128,7 @@ async def confirm_payment(call: types.CallbackQuery, callback_data: dict):
     user_id = call.from_user.id
     username = call.from_user.username or 'без username'
     title, price, _ = data[s][i]
-
     confirmation_msg = await call.message.edit_text("Ожидается подтверждение администратора…")
-
     kb = types.InlineKeyboardMarkup()
     kb.add(types.InlineKeyboardButton("✅ Подтвердить", callback_data=deliver_cb.new(
         social=s,
@@ -139,7 +137,6 @@ async def confirm_payment(call: types.CallbackQuery, callback_data: dict):
         msg=str(confirmation_msg.message_id),
         method=method
     )))
-
     await bot.send_message(
         ADMIN_ID,
         f"🛒 Заявка на подтверждение товара\n"
@@ -155,7 +152,14 @@ async def deliver_file(call: types.CallbackQuery, callback_data: dict):
     s = callback_data['social']
     i = int(callback_data['item'])
     user_id = int(callback_data['user'])
-    file_link = data[s][i][2]
+    msg_id = int(callback_data['msg'])
+    method = callback_data['method']
+    _, _, file_link = data[s][i]
+
+    try:
+        await bot.delete_message(user_id, msg_id)
+    except:
+        pass
 
     await bot.send_message(
         user_id,
