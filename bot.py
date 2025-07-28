@@ -14,13 +14,14 @@ buy_cb = CallbackData('buy', 'social', 'item')
 pay_cb = CallbackData('pay', 'social', 'item', 'method')
 confirm_cb = CallbackData('confirm', 'social', 'item', 'method')
 deliver_cb = CallbackData('deliver', 'social', 'item', 'user', 'msg', 'method')
+reject_cb = CallbackData('reject', 'social', 'item', 'user', 'msg')
 
 data = {
     'Instagram': [
         ("Как набрать первых 1 000 подписчиков в Instagram\nбез рекламы", "5", "https://drive.google.com/file/d/1tX5SBmcTwcxftDg4MPN60Rr4jWV73Ln7/view?usp=sharing"),
         ("Алгоритмы Instagram и как использовать их в 2025 году", "4", "https://drive.google.com/file/d/1bSIRQZLWDdM1wrmLFePMpnehz4ZhMqWB/view?usp=sharing"),
         ("Эффективное продвижение в Instagram в 2025 году", "4", "https://drive.google.com/file/d/1-q96rh99P8b2ZdmwH7v9VlccDGtx7NUg/view?usp=sharing"),
-        ("Контент-план на месяц для Instagram", "5", "https://drive.google.com/file/d/1vVgEPrWrk17Zsuwv_QSaU1nwdX434QQz/view?usp=sharing"),
+        ("Контент-план на месяц для Instagram", "5", "https://drive.google.com/file/d/1vGEPqZWrk17Zsuwv_QSaU1nwdX434QQz/view?usp=sharing"),
         ("Как вести Instagram Stories каждый день", "3.5", "https://drive.google.com/file/d/1kEPqZ9A55WXTzN9KXYkwvFBUXfaOXGsb/view?usp=sharing"),
         ("Оформление и ведение Instagram как у экспертов", "3", "https://drive.google.com/file/d/14yqdEiLMHFogcJXNH-wiiNeeSsisHzQV/view?usp=sharing")
     ],
@@ -84,7 +85,7 @@ async def show_items(call: types.CallbackQuery):
 
 @dp.callback_query_handler(lambda c: c.data == 'main')
 async def go_main(call: types.CallbackQuery):
-    await call.message.answer("Выберите социальную сеть:", reply_markup=main_menu())
+    await call.message.edit_text("Выберите социальную сеть:", reply_markup=main_menu())
 
 @dp.callback_query_handler(buy_cb.filter())
 async def select_payment(call: types.CallbackQuery, callback_data: dict):
@@ -95,12 +96,7 @@ async def select_payment(call: types.CallbackQuery, callback_data: dict):
     for method in payment_methods:
         kb.add(types.InlineKeyboardButton(method_names[method], callback_data=pay_cb.new(social=s, item=str(i), method=method)))
     kb.add(types.InlineKeyboardButton("⬅️ Назад", callback_data=s))
-    await call.message.edit_text(
-        f"<b>{title}</b>\n\n"
-        f"Цена: <b>{price} USDT</b>\n\n"
-        f"Выберите способ оплаты:",
-        reply_markup=kb
-    )
+    await call.message.edit_text(f"<b>{title}</b>\n\nЦена: <b>{price} USDT</b>\n\nВыберите способ оплаты:", reply_markup=kb)
 
 @dp.callback_query_handler(pay_cb.filter())
 async def payment_details(call: types.CallbackQuery, callback_data: dict):
@@ -108,13 +104,7 @@ async def payment_details(call: types.CallbackQuery, callback_data: dict):
     i = int(callback_data['item'])
     method = callback_data['method']
     title, price, _ = data[s][i]
-    text = (
-        f"<b>{title}</b>\n"
-        f"Цена: <b>{price} USDT</b>\n\n"
-        f"Реквизиты для оплаты:\n"
-        f"{payment_methods[method]}\n\n"
-        f"После оплаты нажмите кнопку ниже."
-    )
+    text = f"<b>{title}</b>\nЦена: <b>{price} USDT</b>\n\nРеквизиты для оплаты:\n{payment_methods[method]}\n\nПосле оплаты нажмите кнопку ниже."
     kb = types.InlineKeyboardMarkup()
     kb.add(types.InlineKeyboardButton("✅ Я оплатил", callback_data=confirm_cb.new(social=s, item=str(i), method=method)))
     kb.add(types.InlineKeyboardButton("⬅️ Назад", callback_data=buy_cb.new(social=s, item=str(i))))
@@ -128,15 +118,14 @@ async def confirm_payment(call: types.CallbackQuery, callback_data: dict):
     user_id = call.from_user.id
     username = call.from_user.username or 'без username'
     title, price, _ = data[s][i]
-    confirmation_msg = await call.message.edit_text("Ожидается подтверждение администратора…")
-    kb = types.InlineKeyboardMarkup()
-    kb.add(types.InlineKeyboardButton("✅ Подтвердить", callback_data=deliver_cb.new(
-        social=s,
-        item=str(i),
-        user=str(user_id),
-        msg=str(confirmation_msg.message_id),
-        method=method
-    )))
+    msg = await call.message.edit_text("Ожидается подтверждение администратора…")
+
+    kb = types.InlineKeyboardMarkup(row_width=2)
+    kb.add(
+        types.InlineKeyboardButton("✅ Подтвердить", callback_data=deliver_cb.new(social=s, item=str(i), user=str(user_id), msg=str(msg.message_id), method=method)),
+        types.InlineKeyboardButton("❌ Отклонить", callback_data=reject_cb.new(social=s, item=str(i), user=str(user_id), msg=str(msg.message_id)))
+    )
+
     await bot.send_message(
         ADMIN_ID,
         f"🛒 Заявка на подтверждение товара\n"
@@ -153,7 +142,6 @@ async def deliver_file(call: types.CallbackQuery, callback_data: dict):
     i = int(callback_data['item'])
     user_id = int(callback_data['user'])
     msg_id = int(callback_data['msg'])
-    method = callback_data['method']
     _, _, file_link = data[s][i]
 
     try:
@@ -168,8 +156,28 @@ async def deliver_file(call: types.CallbackQuery, callback_data: dict):
             types.InlineKeyboardButton("⬅️ Главное меню", callback_data='main')
         )
     )
-
     await call.message.edit_text("✅ Оплата подтверждена, гайд выдан.")
+
+@dp.callback_query_handler(reject_cb.filter())
+async def reject_payment(call: types.CallbackQuery, callback_data: dict):
+    if call.from_user.id != ADMIN_ID:
+        await call.answer("Недоступно", show_alert=True)
+        return
+
+    user_id = int(callback_data['user'])
+    msg_id = int(callback_data['msg'])
+
+    try:
+        await bot.delete_message(user_id, msg_id)
+    except:
+        pass
+
+    await bot.send_message(
+        user_id,
+        "❌ <b>Платёж не подтверждён</b>\nПроверьте данные и попробуйте снова."
+    )
+
+    await call.message.edit_text("❌ Платёж отклонён. Пользователю отправлено уведомление.")
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
