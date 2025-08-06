@@ -164,6 +164,32 @@ async def select_payment(call: types.CallbackQuery, callback_data: dict):
 
 @dp.callback_query_handler(pay_cb.filter())
 async def payment_details(call: types.CallbackQuery, callback_data: dict):
+    s = callback_data['social']
+    i = int(callback_data['item'])
+    method = callback_data['method']
+    title, price_usdt, _ = data[s][i]
+
+    # Конвертация цены
+    if method in ['pumb', 'privat']:
+        rate = 40  # курс USDT к гривне
+        price_uah = round(float(price_usdt) * rate)
+        price_text = f"<b>{price_uah} грн</b> (≈ {price_usdt} USDT)"
+    else:
+        price_text = f"<b>{price_usdt} USDT</b>"
+
+    text = (
+        f"<b>{title}</b>\n"
+        f"Цена: {price_text}\n\n"
+        f"Реквизиты для оплаты:\n{payment_methods[method]}\n\n"
+        f"После оплаты нажмите кнопку ниже."
+    )
+
+    kb = types.InlineKeyboardMarkup()
+    kb.add(types.InlineKeyboardButton("✅ Я оплатил", callback_data=confirm_cb.new(social=s, item=str(i), method=method)))
+    kb.add(types.InlineKeyboardButton("⬅️ Назад", callback_data=buy_cb.new(social=s, item=str(i))))
+
+    await call.message.edit_text(text, reply_markup=kb)
+
     user_id = call.from_user.id
     lang = user_languages.get(user_id, 'ru')
     s = callback_data['social']
