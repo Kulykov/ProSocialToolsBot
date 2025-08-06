@@ -168,27 +168,32 @@ async def payment_details(call: types.CallbackQuery, callback_data: dict):
     i = int(callback_data['item'])
     method = callback_data['method']
     title, price_usdt, _ = data[s][i]
-
-    # Конвертация цены
-    if method in ['pumb', 'privat']:
-        rate = 40  # курс USDT к гривне
-        price_uah = round(float(price_usdt) * rate)
-        price_text = f"<b>{price_uah} грн</b> (≈ {price_usdt} USDT)"
-    else:
-        price_text = f"<b>{price_usdt} USDT</b>"
+    
+    # Конвертация в гривны для украинских банков
+    price_display = f"{price_usdt} USDT"
+    if method in ('pumb', 'privat'):
+        try:
+            # Установим фиксированный курс: 1 USDT = 40 грн
+            exchange_rate = 40
+            price_uah = round(float(price_usdt) * exchange_rate)
+            price_display = f"{price_uah} грн"
+        except:
+            pass
 
     text = (
         f"<b>{title}</b>\n"
-        f"Цена: {price_text}\n\n"
+        f"Цена: <b>{price_display}</b>\n\n"
         f"Реквизиты для оплаты:\n{payment_methods[method]}\n\n"
-        f"После оплаты нажмите кнопку ниже."
+        "После оплаты нажмите кнопку ниже:"
     )
 
     kb = types.InlineKeyboardMarkup()
     kb.add(types.InlineKeyboardButton("✅ Я оплатил", callback_data=confirm_cb.new(social=s, item=str(i), method=method)))
     kb.add(types.InlineKeyboardButton("⬅️ Назад", callback_data=buy_cb.new(social=s, item=str(i))))
 
-    await bot.send_message(text, reply_markup=kb)
+    # Вместо edit_text — используем send_message, чтобы не было "мигания"
+    await bot.send_message(call.from_user.id, text, reply_markup=kb)
+
 
 
     user_id = call.from_user.id
