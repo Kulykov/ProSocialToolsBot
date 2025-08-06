@@ -67,6 +67,7 @@ method_names = {
     'privat': {'ru': 'Приват Банк', 'uk': 'Приват Банк'}
 }
 
+
 def get_main_menu(lang: str):
     kb = types.InlineKeyboardMarkup(row_width=1)
     for s in social_networks:
@@ -76,6 +77,7 @@ def get_main_menu(lang: str):
         callback_data=lang_cb.new(language='switch')
     ))
     return kb
+
 
 def welcome_text(lang: str):
     if lang == 'ru':
@@ -108,6 +110,7 @@ async def start(msg: types.Message):
     )
     await msg.answer("Пожалуйста, выберите язык / Будь ласка, оберіть мову:", reply_markup=kb)
 
+
 @dp.callback_query_handler(lang_cb.filter())
 async def change_language(call: types.CallbackQuery, callback_data: dict):
     lang = callback_data['language']
@@ -121,8 +124,8 @@ async def change_language(call: types.CallbackQuery, callback_data: dict):
         user_languages[user_id] = lang
 
     lang = user_languages[user_id]
-
     await call.message.edit_text(welcome_text(lang), reply_markup=get_main_menu(lang))
+
 
 @dp.callback_query_handler(lambda c: c.data in social_networks)
 async def show_items(call: types.CallbackQuery):
@@ -137,11 +140,13 @@ async def show_items(call: types.CallbackQuery):
     kb.add(types.InlineKeyboardButton(back_text, callback_data='main'))
     await call.message.edit_text(f"<b>{s}</b> — {'выберите гайд' if lang == 'ru' else 'оберіть гайд'}:", reply_markup=kb)
 
+
 @dp.callback_query_handler(lambda c: c.data == 'main')
 async def go_main(call: types.CallbackQuery):
     user_id = call.from_user.id
     lang = user_languages.get(user_id, 'ru')
     await call.message.edit_text(welcome_text(lang), reply_markup=get_main_menu(lang))
+
 
 @dp.callback_query_handler(buy_cb.filter())
 async def select_payment(call: types.CallbackQuery, callback_data: dict):
@@ -153,7 +158,7 @@ async def select_payment(call: types.CallbackQuery, callback_data: dict):
     kb = types.InlineKeyboardMarkup(row_width=1)
     for method in payment_methods:
         kb.add(types.InlineKeyboardButton(method_names[method][lang], callback_data=pay_cb.new(social=s, item=str(i), method=method)))
-    back_text = "⬅️ Назад" if lang == 'ru' else "⬅️ Назад"
+    back_text = "⬅️ Назад"
     kb.add(types.InlineKeyboardButton(back_text, callback_data=s))
     await call.message.edit_text(
         f"<b>{title}</b>\n\n" +
@@ -162,80 +167,39 @@ async def select_payment(call: types.CallbackQuery, callback_data: dict):
         reply_markup=kb
     )
 
+
 @dp.callback_query_handler(pay_cb.filter())
 async def payment_details(call: types.CallbackQuery, callback_data: dict):
     s = callback_data['social']
     i = int(callback_data['item'])
     method = callback_data['method']
+    user_id = call.from_user.id
+    lang = user_languages.get(user_id, 'ru')
     title, price_usdt, _ = data[s][i]
 
-    # Получаем язык из состояния (по умолчанию RU)
-    user_id = call.from_user.id
-    user_lang = user_language.get(user_id, 'ru')
-
-    # Конвертация цены
     if method in ('pumb', 'privat'):
         exchange_rate = 40
         price_uah = round(float(price_usdt) * exchange_rate)
-        if user_lang == 'ua':
-            price_display = f"{price_uah} грн"
-        else:
-            price_display = f"{price_uah} грн"
+        price_display = f"{price_uah} грн"
     else:
-        if user_lang == 'ua':
-            price_display = f"{price_usdt} USDT"
-        else:
-            price_display = f"{price_usdt} USDT"
+        price_display = f"{price_usdt} USDT"
 
-    # Текст с учётом языка
-    if user_lang == 'ua':
-        text = (
-            f"<b>{title}</b>\n"
-            f"Ціна: <b>{price_display}</b>\n\n"
-            f"Реквізити для оплати:\n{payment_methods[method]}\n\n"
-            f"Після оплати натисніть кнопку нижче:"
-        )
-        confirm_text = "✅ Я оплатив"
-        back_text = "⬅️ Назад"
-    else:
-        text = (
-            f"<b>{title}</b>\n"
-            f"Цена: <b>{price_display}</b>\n\n"
-            f"Реквизиты для оплаты:\n{payment_methods[method]}\n\n"
-            f"После оплаты нажмите кнопку ниже:"
-        )
-        confirm_text = "✅ Я оплатил"
-        back_text = "⬅️ Назад"
+    text = (
+        f"<b>{title}</b>\n"
+        f"{'Цена' if lang == 'ru' else 'Ціна'}: <b>{price_display}</b>\n\n"
+        f"{'Реквизиты для оплаты' if lang == 'ru' else 'Реквізити для оплати'}:\n{payment_methods[method]}\n\n"
+        f"{'После оплаты нажмите кнопку ниже:' if lang == 'ru' else 'Після оплати натисніть кнопку нижче:'}"
+    )
 
-    # Кнопки
+    confirm_text = "✅ Я оплатил" if lang == 'ru' else "✅ Я оплатив"
+    back_text = "⬅️ Назад"
+
     kb = types.InlineKeyboardMarkup()
     kb.add(types.InlineKeyboardButton(confirm_text, callback_data=confirm_cb.new(social=s, item=str(i), method=method)))
     kb.add(types.InlineKeyboardButton(back_text, callback_data=buy_cb.new(social=s, item=str(i))))
 
-    # Обновляем то же сообщение
     await call.message.edit_text(text, reply_markup=kb)
 
-
-
-
-    user_id = call.from_user.id
-    lang = user_languages.get(user_id, 'ru')
-    s = callback_data['social']
-    i = int(callback_data['item'])
-    method = callback_data['method']
-    title, price, _ = data[s][i]
-    text = (f"<b>{title}</b>\n" +
-            (f"Цена: <b>{price} USDT</b>\n\nРеквизиты для оплаты:\n{payment_methods[method]}\n\nПосле оплаты нажмите кнопку ниже."
-             if lang == 'ru' else
-             f"Ціна: <b>{price} USDT</b>\n\nРеквізити для оплати:\n{payment_methods[method]}\n\nПісля оплати натисніть кнопку нижче."))
-    kb = types.InlineKeyboardMarkup()
-    kb.add(types.InlineKeyboardButton(
-        "✅ Я оплатил" if lang == 'ru' else "✅ Я оплатив",
-        callback_data=confirm_cb.new(social=s, item=str(i), method=method)
-    ))
-    back_text = "⬅️ Назад" if lang == 'ru' else "⬅️ Назад"
-    kb.add(types.InlineKeyboardButton(back_text, callback_data=buy_cb.new(social=s, item=str(i))))
-    await call.message.edit_text(text, reply_markup=kb)
 
 @dp.callback_query_handler(confirm_cb.filter())
 async def confirm_payment(call: types.CallbackQuery, callback_data: dict):
@@ -247,7 +211,7 @@ async def confirm_payment(call: types.CallbackQuery, callback_data: dict):
     title, price, _ = data[s][i]
     lang = user_languages.get(user_id, 'ru')
 
-    wait_text = ("Ожидается подтверждение администратора…" if lang == 'ru' else "Очікується підтвердження адміністратора…")
+    wait_text = "Ожидается подтверждение администратора…" if lang == 'ru' else "Очікується підтвердження адміністратора…"
     msg = await call.message.edit_text(wait_text)
 
     kb = types.InlineKeyboardMarkup(row_width=2)
@@ -266,6 +230,7 @@ async def confirm_payment(call: types.CallbackQuery, callback_data: dict):
         reply_markup=kb
     )
 
+
 @dp.callback_query_handler(deliver_cb.filter())
 async def deliver_file(call: types.CallbackQuery, callback_data: dict):
     if call.from_user.id != ADMIN_ID:
@@ -276,15 +241,13 @@ async def deliver_file(call: types.CallbackQuery, callback_data: dict):
     i = int(callback_data['item'])
     user_id = int(callback_data['user'])
     msg_id = int(callback_data['msg'])
-    method = callback_data['method']
     _, _, file_link = data[s][i]
+    lang = user_languages.get(user_id, 'ru')
 
     try:
         await bot.delete_message(user_id, msg_id)
     except:
         pass
-
-    lang = user_languages.get(user_id, 'ru')
 
     text = ("✅ Спасибо за оплату!\nВот ваш файл:\n" if lang == 'ru' else "✅ Дякуємо за оплату!\nОсь ваш файл:\n") + file_link
 
@@ -297,6 +260,7 @@ async def deliver_file(call: types.CallbackQuery, callback_data: dict):
     )
     await call.message.edit_text("✅ Оплата подтверждена, гайд выдан.")
 
+
 @dp.callback_query_handler(reject_cb.filter())
 async def reject_payment(call: types.CallbackQuery, callback_data: dict):
     if call.from_user.id != ADMIN_ID:
@@ -305,22 +269,19 @@ async def reject_payment(call: types.CallbackQuery, callback_data: dict):
 
     user_id = int(callback_data['user'])
     msg_id = int(callback_data['msg'])
+    lang = user_languages.get(user_id, 'ru')
 
     try:
         await bot.delete_message(user_id, msg_id)
     except:
         pass
 
-    lang = user_languages.get(user_id, 'ru')
     text = ("❌ <b>Платёж не подтверждён</b>\nПроверьте данные и попробуйте снова." if lang == 'ru'
             else "❌ <b>Платіж не підтверджено</b>\nПеревірте дані та спробуйте ще раз.")
 
-    await bot.send_message(
-        user_id,
-        text
-    )
-
+    await bot.send_message(user_id, text)
     await call.message.edit_text("❌ Платёж отклонён. Пользователю отправлено уведомление.")
+
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
