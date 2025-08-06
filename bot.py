@@ -168,31 +168,53 @@ async def payment_details(call: types.CallbackQuery, callback_data: dict):
     i = int(callback_data['item'])
     method = callback_data['method']
     title, price_usdt, _ = data[s][i]
-    
-    # Конвертация в гривны для украинских банков
-    price_display = f"{price_usdt} USDT"
+
+    # Получаем язык из состояния (по умолчанию RU)
+    user_id = call.from_user.id
+    user_lang = user_language.get(user_id, 'ru')
+
+    # Конвертация цены
     if method in ('pumb', 'privat'):
-        try:
-            # Установим фиксированный курс: 1 USDT = 40 грн
-            exchange_rate = 40
-            price_uah = round(float(price_usdt) * exchange_rate)
+        exchange_rate = 40
+        price_uah = round(float(price_usdt) * exchange_rate)
+        if user_lang == 'ua':
             price_display = f"{price_uah} грн"
-        except:
-            pass
+        else:
+            price_display = f"{price_uah} грн"
+    else:
+        if user_lang == 'ua':
+            price_display = f"{price_usdt} USDT"
+        else:
+            price_display = f"{price_usdt} USDT"
 
-    text = (
-        f"<b>{title}</b>\n"
-        f"Цена: <b>{price_display}</b>\n\n"
-        f"Реквизиты для оплаты:\n{payment_methods[method]}\n\n"
-        "После оплаты нажмите кнопку ниже:"
-    )
+    # Текст с учётом языка
+    if user_lang == 'ua':
+        text = (
+            f"<b>{title}</b>\n"
+            f"Ціна: <b>{price_display}</b>\n\n"
+            f"Реквізити для оплати:\n{payment_methods[method]}\n\n"
+            f"Після оплати натисніть кнопку нижче:"
+        )
+        confirm_text = "✅ Я оплатив"
+        back_text = "⬅️ Назад"
+    else:
+        text = (
+            f"<b>{title}</b>\n"
+            f"Цена: <b>{price_display}</b>\n\n"
+            f"Реквизиты для оплаты:\n{payment_methods[method]}\n\n"
+            f"После оплаты нажмите кнопку ниже:"
+        )
+        confirm_text = "✅ Я оплатил"
+        back_text = "⬅️ Назад"
 
+    # Кнопки
     kb = types.InlineKeyboardMarkup()
-    kb.add(types.InlineKeyboardButton("✅ Я оплатил", callback_data=confirm_cb.new(social=s, item=str(i), method=method)))
-    kb.add(types.InlineKeyboardButton("⬅️ Назад", callback_data=buy_cb.new(social=s, item=str(i))))
+    kb.add(types.InlineKeyboardButton(confirm_text, callback_data=confirm_cb.new(social=s, item=str(i), method=method)))
+    kb.add(types.InlineKeyboardButton(back_text, callback_data=buy_cb.new(social=s, item=str(i))))
 
-    # Вместо edit_text — используем send_message, чтобы не было "мигания"
-    await bot.send_message(call.from_user.id, text, reply_markup=kb)
+    # Обновляем то же сообщение
+    await call.message.edit_text(text, reply_markup=kb)
+
 
 
 
