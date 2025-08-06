@@ -188,7 +188,8 @@ async def payment_details(call: types.CallbackQuery, callback_data: dict):
     kb.add(types.InlineKeyboardButton("✅ Я оплатил", callback_data=confirm_cb.new(social=s, item=str(i), method=method)))
     kb.add(types.InlineKeyboardButton("⬅️ Назад", callback_data=buy_cb.new(social=s, item=str(i))))
 
-    await call.message.edit_text(text, reply_markup=kb)
+    await bot.send_message(call.from_user.id, text, reply_markup=kb)
+
 
     user_id = call.from_user.id
     lang = user_languages.get(user_id, 'ru')
