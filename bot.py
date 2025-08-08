@@ -3,7 +3,8 @@ from aiogram.utils.callback_data import CallbackData
 import logging
 
 API_TOKEN = '8189935957:AAHIGvtVwJCnrpj2tTNCJEZbwfcYvlRYfmQ'
-ADMIN_ID = 2041956053
+ADMIN_ID = 2041956053  # для подтверждения оплат
+LOG_CHAT_ID = -1002819238293  # чат для логов о новых пользователях
 
 bot = Bot(token=API_TOKEN, parse_mode='HTML')
 dp = Dispatcher(bot)
@@ -50,7 +51,6 @@ data = {
     ]
 }
 
-
 social_networks = list(data.keys())
 
 payment_methods = {
@@ -67,7 +67,6 @@ method_names = {
     'privat': {'ru': 'Приват Банк', 'uk': 'Приват Банк'}
 }
 
-
 def get_main_menu(lang: str):
     kb = types.InlineKeyboardMarkup(row_width=1)
     for s in social_networks:
@@ -77,7 +76,6 @@ def get_main_menu(lang: str):
         callback_data=lang_cb.new(language='switch')
     ))
     return kb
-
 
 def welcome_text(lang: str):
     if lang == 'ru':
@@ -99,7 +97,6 @@ def welcome_text(lang: str):
             "Щоб змінити мову — натисніть кнопку «Змінити мову» внизу."
         )
 
-
 @dp.message_handler(commands=['start'])
 async def start(msg: types.Message):
     user_languages[msg.from_user.id] = 'ru'
@@ -110,6 +107,15 @@ async def start(msg: types.Message):
     )
     await msg.answer("Пожалуйста, выберите язык / Будь ласка, оберіть мову:", reply_markup=kb)
 
+    # Отправка лога о новом пользователе в чат LOG_CHAT_ID
+    user = msg.from_user
+    user_info = (
+        f"👤 Новый пользователь:\n"
+        f"ID: <code>{user.id}</code>\n"
+        f"Username: @{user.username if user.username else 'нет'}\n"
+        f"Имя: {user.full_name}"
+    )
+    await bot.send_message(LOG_CHAT_ID, user_info, parse_mode='HTML')
 
 @dp.callback_query_handler(lang_cb.filter())
 async def change_language(call: types.CallbackQuery, callback_data: dict):
@@ -126,7 +132,6 @@ async def change_language(call: types.CallbackQuery, callback_data: dict):
     lang = user_languages[user_id]
     await call.message.edit_text(welcome_text(lang), reply_markup=get_main_menu(lang))
 
-
 @dp.callback_query_handler(lambda c: c.data in social_networks)
 async def show_items(call: types.CallbackQuery):
     user_id = call.from_user.id
@@ -140,13 +145,11 @@ async def show_items(call: types.CallbackQuery):
     kb.add(types.InlineKeyboardButton(back_text, callback_data='main'))
     await call.message.edit_text(f"<b>{s}</b> — {'выберите гайд' if lang == 'ru' else 'оберіть гайд'}:", reply_markup=kb)
 
-
 @dp.callback_query_handler(lambda c: c.data == 'main')
 async def go_main(call: types.CallbackQuery):
     user_id = call.from_user.id
     lang = user_languages.get(user_id, 'ru')
     await call.message.edit_text(welcome_text(lang), reply_markup=get_main_menu(lang))
-
 
 @dp.callback_query_handler(buy_cb.filter())
 async def select_payment(call: types.CallbackQuery, callback_data: dict):
