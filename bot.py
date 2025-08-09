@@ -236,13 +236,15 @@ async def select_payment(call: types.CallbackQuery, callback_data: dict):
     for method in payment_methods:
         kb.add(types.InlineKeyboardButton(method_names[method][lang], callback_data=pay_cb.new(social=s, item=str(i), method=method)))
     back_text = "⬅️ Назад" if lang == 'ru' else "⬅️ Назад"  # если нужно, можно сделать перевод
-    kb.add(types.InlineKeyboardButton(back_text, callback_data=s))
+    # Здесь исправление:
+    kb.add(types.InlineKeyboardButton(back_text, callback_data=social_cb.new(name=s)))
     await call.message.edit_text(
         f"<b>{title}</b>\n\n" +
         (f"Цена: <b>{price} USDT</b>\n\nВыберите способ оплаты:" if lang == 'ru' else
          f"Ціна: <b>{price} USDT</b>\n\nОберіть спосіб оплати:"),
         reply_markup=kb
     )
+
 
 
 @dp.callback_query_handler(pay_cb.filter())
