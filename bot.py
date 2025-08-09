@@ -57,15 +57,18 @@ payment_methods = {
     'bybit': 'ByBit UID: <code>109789263</code>',
     'binance': 'Binance ID: <code>540037709</code>',
     'pumb': 'ПУМБ Банк: <code>5355 2800 2466 5372</code>',
-    'privat': 'Приват Банк: <code>5168745194585250</code>'
+    'privat': 'Приват Банк: <code>5168745194585250</code>',
+    'monobank': 'Monobank: <code>4441114467832299</code>'  
 }
 
 method_names = {
     'bybit': {'ru': 'ByBit перевод', 'uk': 'ByBit переказ'},
     'binance': {'ru': 'Binance перевод', 'uk': 'Binance переказ'},
     'pumb': {'ru': 'ПУМБ Банк', 'uk': 'ПУМБ Банк'},
-    'privat': {'ru': 'Приват Банк', 'uk': 'Приват Банк'}
+    'privat': {'ru': 'Приват Банк', 'uk': 'Приват Банк'},
+    'monobank': {'ru': 'Монобанк', 'uk': 'Монобанк'}  
 }
+
 
 def get_main_menu(lang: str):
     kb = types.InlineKeyboardMarkup(row_width=1)
@@ -180,7 +183,8 @@ async def payment_details(call: types.CallbackQuery, callback_data: dict):
     lang = user_languages.get(user_id, 'ru')
     title, price_usdt, _ = data[s][i]
 
-    if method in ('pumb', 'privat'):
+    # 🔹 Monobank теперь тоже считается в гривнах
+    if method in ('pumb', 'privat', 'monobank'):
         exchange_rate = 40
         price_uah = round(float(price_usdt) * exchange_rate)
         price_display = f"{price_uah} грн"
@@ -202,6 +206,7 @@ async def payment_details(call: types.CallbackQuery, callback_data: dict):
     kb.add(types.InlineKeyboardButton(back_text, callback_data=buy_cb.new(social=s, item=str(i))))
 
     await call.message.edit_text(text, reply_markup=kb)
+
 
 
 @dp.callback_query_handler(confirm_cb.filter())
