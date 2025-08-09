@@ -57,14 +57,16 @@ payment_methods = {
     'bybit': 'ByBit UID: <code>109789263</code>',
     'binance': 'Binance ID: <code>540037709</code>',
     'pumb': 'ПУМБ Банк: <code>5355 2800 2466 5372</code>',
-    'privat': 'Приват Банк: <code>5168745194585250</code>'
+    'privat': 'Приват Банк: <code>5168745194585250</code>',
+    'monobank': 'Монобанк карта: <code>4441 1144 6783 2299</code>'
 }
 
 method_names = {
     'bybit': {'ru': 'ByBit перевод', 'uk': 'ByBit переказ'},
     'binance': {'ru': 'Binance перевод', 'uk': 'Binance переказ'},
     'pumb': {'ru': 'ПУМБ Банк', 'uk': 'ПУМБ Банк'},
-    'privat': {'ru': 'Приват Банк', 'uk': 'Приват Банк'}
+    'privat': {'ru': 'Приват Банк', 'uk': 'Приват Банк'},
+    'monobank': {'ru': 'Монобанк', 'uk': 'Монобанк'}
 }
 
 def get_main_menu(lang: str):
@@ -180,7 +182,7 @@ async def payment_details(call: types.CallbackQuery, callback_data: dict):
     lang = user_languages.get(user_id, 'ru')
     title, price_usdt, _ = data[s][i]
 
-    if method in ('pumb', 'privat'):
+    if method in ('pumb', 'privat', 'monobank'):
         exchange_rate = 40
         price_uah = round(float(price_usdt) * exchange_rate)
         price_display = f"{price_uah} грн"
