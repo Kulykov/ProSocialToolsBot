@@ -228,7 +228,8 @@ async def select_payment(call: types.CallbackQuery, callback_data: dict):
     lang = user_languages.get(user_id, 'ru')
     s = callback_data['social']
     i = int(callback_data['item'])
-    title, price, _ = data[s][i]
+    title_dict, price, _ = data[s][i]
+    title = title_dict.get(lang, title_dict['ru'])
     kb = types.InlineKeyboardMarkup(row_width=1)
     for method in payment_methods:
         kb.add(types.InlineKeyboardButton(method_names[method][lang], callback_data=pay_cb.new(social=s, item=str(i), method=method)))
@@ -242,6 +243,7 @@ async def select_payment(call: types.CallbackQuery, callback_data: dict):
     )
 
 
+
 @dp.callback_query_handler(pay_cb.filter())
 async def payment_details(call: types.CallbackQuery, callback_data: dict):
     s = callback_data['social']
@@ -249,7 +251,8 @@ async def payment_details(call: types.CallbackQuery, callback_data: dict):
     method = callback_data['method']
     user_id = call.from_user.id
     lang = user_languages.get(user_id, 'ru')
-    title, price_usdt, _ = data[s][i]
+    title_dict, price_usdt, _ = data[s][i]
+    title = title_dict.get(lang, title_dict['ru'])
 
     if method in ('pumb', 'privat', 'monobank'):
         exchange_rate = 40
@@ -282,8 +285,9 @@ async def confirm_payment(call: types.CallbackQuery, callback_data: dict):
     method = callback_data['method']
     user_id = call.from_user.id
     username = call.from_user.username or 'без username'
-    title, price, _ = data[s][i]
+    title_dict, price, _ = data[s][i]
     lang = user_languages.get(user_id, 'ru')
+    title = title_dict.get(lang, title_dict['ru'])
 
     wait_text = "Ожидается подтверждение администратора…" if lang == 'ru' else "Очікується підтвердження адміністратора…"
     msg = await call.message.edit_text(wait_text)
