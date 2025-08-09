@@ -16,6 +16,7 @@ confirm_cb = CallbackData('confirm', 'social', 'item', 'method')
 deliver_cb = CallbackData('deliver', 'social', 'item', 'user', 'msg', 'method')
 reject_cb = CallbackData('reject', 'social', 'item', 'user', 'msg')
 lang_cb = CallbackData('lang', 'language')
+social_cb = CallbackData('social', 'name')
 
 user_languages = {}
 
@@ -136,12 +137,13 @@ method_names = {
 def get_main_menu(lang: str):
     kb = types.InlineKeyboardMarkup(row_width=1)
     for s in social_networks:
-        kb.add(types.InlineKeyboardButton(s, callback_data=f"social:{s}"))
+        kb.add(types.InlineKeyboardButton(s, callback_data=social_cb.new(name=s)))
     kb.add(types.InlineKeyboardButton(
         "🌐 Сменить язык" if lang == 'ru' else "🌐 Змінити мову",
         callback_data=lang_cb.new(language='switch')
     ))
     return kb
+
 
 
 def welcome_text(lang: str):
@@ -199,12 +201,12 @@ async def change_language(call: types.CallbackQuery, callback_data: dict):
     lang = user_languages[user_id]
     await call.message.edit_text(welcome_text(lang), reply_markup=get_main_menu(lang))
 
-@dp.callback_query_handler(lambda c: c.data.startswith('social:'))
-async def show_items(call: types.CallbackQuery):
+@dp.callback_query_handler(social_cb.filter())
+async def show_items(call: types.CallbackQuery, callback_data: dict):
     await call.answer()
     user_id = call.from_user.id
     lang = user_languages.get(user_id, 'ru')
-    s = call.data.split(':', 1)[1]
+    s = callback_data['name']
     items = data[s]
     kb = types.InlineKeyboardMarkup(row_width=1)
     for i, (title, price, _) in enumerate(items):
@@ -212,6 +214,7 @@ async def show_items(call: types.CallbackQuery):
     back_text = "⬅️ Главное меню" if lang == 'ru' else "⬅️ Головне меню"
     kb.add(types.InlineKeyboardButton(back_text, callback_data='main'))
     await call.message.edit_text(f"<b>{s}</b> — {'выберите гайд' if lang == 'ru' else 'оберіть гайд'}:", reply_markup=kb)
+
 
 
 
