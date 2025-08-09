@@ -224,11 +224,11 @@ async def select_payment(call: types.CallbackQuery, callback_data: dict):
     s = callback_data['social']
     i = int(callback_data['item'])
     title_dict, price, _ = data[s][i]
-title = title_dict[lang]
+    title = title_dict[lang]  # Внутри функции и с отступом
     kb = types.InlineKeyboardMarkup(row_width=1)
     for method in payment_methods:
         kb.add(types.InlineKeyboardButton(method_names[method][lang], callback_data=pay_cb.new(social=s, item=str(i), method=method)))
-    back_text = "⬅️ Назад"
+    back_text = "⬅️ Назад" if lang == 'ru' else "⬅️ Назад"  # если нужно, можно сделать перевод
     kb.add(types.InlineKeyboardButton(back_text, callback_data=s))
     await call.message.edit_text(
         f"<b>{title}</b>\n\n" +
@@ -280,9 +280,9 @@ async def confirm_payment(call: types.CallbackQuery, callback_data: dict):
     method = callback_data['method']
     user_id = call.from_user.id
     username = call.from_user.username or 'без username'
-    title_dict, price, _ = data[s][i]
-title = title_dict[lang]
     lang = user_languages.get(user_id, 'ru')
+    title_dict, price, _ = data[s][i]
+    title = title_dict[lang]  # Внутри функции и после определения lang
 
     wait_text = "Ожидается подтверждение администратора…" if lang == 'ru' else "Очікується підтвердження адміністратора…"
     msg = await call.message.edit_text(wait_text)
