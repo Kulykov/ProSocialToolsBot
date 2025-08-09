@@ -284,8 +284,16 @@ async def reject_payment(call: types.CallbackQuery, callback_data: dict):
     text = ("❌ <b>Платёж не подтверждён</b>\nПроверьте данные и попробуйте снова." if lang == 'ru'
             else "❌ <b>Платіж не підтверджено</b>\nПеревірте дані та спробуйте ще раз.")
 
-    await bot.send_message(user_id, text)
+    kb = types.InlineKeyboardMarkup().add(
+        types.InlineKeyboardButton(
+            "⬅️ Главное меню" if lang == 'ru' else "⬅️ Головне меню",
+            callback_data='main'
+        )
+    )
+
+    await bot.send_message(user_id, text, reply_markup=kb)
     await call.message.edit_text("❌ Платёж отклонён. Пользователю отправлено уведомление.")
+
 
 
 if __name__ == '__main__':
