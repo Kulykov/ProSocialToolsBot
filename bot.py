@@ -205,11 +205,16 @@ async def show_items(call: types.CallbackQuery):
     s = call.data
     items = data[s]
     kb = types.InlineKeyboardMarkup(row_width=1)
-    for i, (title, price, _) in enumerate(items):
+    for i, (titles, price, _) in enumerate(items):
+        title = titles.get(lang, titles['ru'])  # Берём нужный язык, по умолчанию русский
         kb.add(types.InlineKeyboardButton(title.splitlines()[0], callback_data=buy_cb.new(social=s, item=str(i))))
     back_text = "⬅️ Главное меню" if lang == 'ru' else "⬅️ Головне меню"
     kb.add(types.InlineKeyboardButton(back_text, callback_data='main'))
-    await call.message.edit_text(f"<b>{s}</b> — {'выберите гайд' if lang == 'ru' else 'оберіть гайд'}:", reply_markup=kb)
+    await call.message.edit_text(
+        f"<b>{s}</b> — {'выберите гайд' if lang == 'ru' else 'оберіть гайд'}:",
+        reply_markup=kb
+    )
+
 
 @dp.callback_query_handler(lambda c: c.data == 'main')
 async def go_main(call: types.CallbackQuery):
