@@ -201,6 +201,7 @@ async def change_language(call: types.CallbackQuery, callback_data: dict):
 
 @dp.callback_query_handler(lambda c: c.data.startswith('social:'))
 async def show_items(call: types.CallbackQuery):
+    await call.answer()
     user_id = call.from_user.id
     lang = user_languages.get(user_id, 'ru')
     s = call.data.split(':', 1)[1]
@@ -211,6 +212,7 @@ async def show_items(call: types.CallbackQuery):
     back_text = "⬅️ Главное меню" if lang == 'ru' else "⬅️ Головне меню"
     kb.add(types.InlineKeyboardButton(back_text, callback_data='main'))
     await call.message.edit_text(f"<b>{s}</b> — {'выберите гайд' if lang == 'ru' else 'оберіть гайд'}:", reply_markup=kb)
+
 
 
 @dp.callback_query_handler(lambda c: c.data == 'main')
