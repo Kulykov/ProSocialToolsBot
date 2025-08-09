@@ -21,35 +21,98 @@ user_languages = {}
 
 data = {
     'Instagram': [
-        ("Как набрать первых 1 000 подписчиков в Instagram\nбез рекламы", "5", "https://drive.google.com/file/d/1tX5SBmcTwcxftDg4MPN60Rr4jWV73Ln7/view?usp=sharing"),
-        ("Алгоритмы Instagram и как использовать их в 2025 году", "4", "https://drive.google.com/file/d/1bSIRQZLWDdM1wrmLFePMpnehz4ZhMqWB/view?usp=sharing"),
-        ("Эффективное продвижение в Instagram в 2025 году", "4", "https://drive.google.com/file/d/1-q96rh99P8b2ZdmwH7v9VlccDGtx7NUg/view?usp=sharing"),
-        ("Контент-план на месяц для Instagram", "5", "https://drive.google.com/file/d/1vGEPqZWrk17Zsuwv_QSaU1nwdX434QQz/view?usp=sharing"),
-        ("Как вести Instagram Stories каждый день", "3.5", "https://drive.google.com/file/d/1kEPqZ9A55WXTzN9KXYkwvFBUXfaOXGsb/view?usp=sharing"),
-        ("Оформление и ведение Instagram как у экспертов", "3", "https://drive.google.com/file/d/14yqdEiLMHFogcJXNH-wiiNeeSsisHzQV/view?usp=sharing")
+        ({"ru": "Как набрать первых 1 000 подписчиков в Instagram\nбез рекламы",
+          "uk": "Як набрати перші 1 000 підписників в Instagram\nбез реклами"},
+         "5", "https://drive.google.com/file/d/1tX5SBmcTwcxftDg4MPN60Rr4jWV73Ln7/view?usp=sharing"),
+
+        ({"ru": "Алгоритмы Instagram и как использовать их в 2025 году",
+          "uk": "Алгоритми Instagram та як їх використовувати у 2025 році"},
+         "4", "https://drive.google.com/file/d/1bSIRQZLWDdM1wrmLFePMpnehz4ZhMqWB/view?usp=sharing"),
+
+        ({"ru": "Эффективное продвижение в Instagram в 2025 году",
+          "uk": "Ефективне просування в Instagram у 2025 році"},
+         "4", "https://drive.google.com/file/d/1-q96rh99P8b2ZdmwH7v9VlccDGtx7NUg/view?usp=sharing"),
+
+        ({"ru": "Контент-план на месяц для Instagram",
+          "uk": "Контент-план на місяць для Instagram"},
+         "5", "https://drive.google.com/file/d/1vGEPqZWrk17Zsuwv_QSaU1nwdX434QQz/view?usp=sharing"),
+
+        ({"ru": "Как вести Instagram Stories каждый день",
+          "uk": "Як вести Instagram Stories щодня"},
+         "3.5", "https://drive.google.com/file/d/1kEPqZ9A55WXTzN9KXYkwvFBUXfaOXGsb/view?usp=sharing"),
+
+        ({"ru": "Оформление и ведение Instagram как у экспертов",
+          "uk": "Оформлення та ведення Instagram як у експертів"},
+         "3", "https://drive.google.com/file/d/14yqdEiLMHFogcJXNH-wiiNeeSsisHzQV/view?usp=sharing")
     ],
+
     'Telegram': [
-        ("Пакет описаний для Instagram и Telegram", "4", "https://drive.google.com/file/d/18SIwmq6X1aeXOnPrpO3R-OacqjEYiamT/view?usp=sharing"),
-        ("Скрипты для Telegram-продаж", "3.5", "https://drive.google.com/file/d/170EAOgsQmCiwL1wSBK0HBewsp_KVFQyQ/view?usp=sharing"),
-        ("Контент на 7 дней — шаблоны постов и сторис", "3.5", "https://drive.google.com/file/d/1HIxdJc0SB0ojlNNz_E5BrFBGtPhtH2dF/view?usp=sharing"),
-        ("10 ошибок при оформлении профиля и как их исправить", "4.5", "https://drive.google.com/file/d/1RXTHRAbviOH_4eM8rJuF5zOdK0Qo_s2S/view?usp=sharing"),
-        ("Оформление Telegram-канала как у экспертов", "4", "https://drive.google.com/file/d/1lKJvJqJD74eXCJ2SUF9BLrdeF_XBCNMG/view?usp=sharing"),
-        ("Оформление и продвижение Telegram-канала", "4", "https://drive.google.com/file/d/11s-KgHP3O188gTXqpTgbhD0CYgFtcnTO/view?usp=sharing")
+        ({"ru": "Пакет описаний для Instagram и Telegram",
+          "uk": "Пакет описів для Instagram і Telegram"},
+         "4", "https://drive.google.com/file/d/18SIwmq6X1aeXOnPrpO3R-OacqjEYiamT/view?usp=sharing"),
+
+        ({"ru": "Скрипты для Telegram-продаж",
+          "uk": "Скрипти для Telegram-продажів"},
+         "3.5", "https://drive.google.com/file/d/170EAOgsQmCiwL1wSBK0HBewsp_KVFQyQ/view?usp=sharing"),
+
+        ({"ru": "Контент на 7 дней — шаблоны постов и сторис",
+          "uk": "Контент на 7 днів — шаблони постів та сторіс"},
+         "3.5", "https://drive.google.com/file/d/1HIxdJc0SB0ojlNNz_E5BrFBGtPhtH2dF/view?usp=sharing"),
+
+        ({"ru": "10 ошибок при оформлении профиля и как их исправить",
+          "uk": "10 помилок в оформленні профілю та як їх виправити"},
+         "4.5", "https://drive.google.com/file/d/1RXTHRAbviOH_4eM8rJuF5zOdK0Qo_s2S/view?usp=sharing"),
+
+        ({"ru": "Оформление Telegram-канала как у экспертов",
+          "uk": "Оформлення Telegram-каналу як у експертів"},
+         "4", "https://drive.google.com/file/d/1lKJvJqJD74eXCJ2SUF9BLrdeF_XBCNMG/view?usp=sharing"),
+
+        ({"ru": "Оформление и продвижение Telegram-канала",
+          "uk": "Оформлення та просування Telegram-каналу"},
+         "4", "https://drive.google.com/file/d/11s-KgHP3O188gTXqpTgbhD0CYgFtcnTO/view?usp=sharing")
     ],
+
     'TikTok': [
-        ("Гайд по росту и виральности", "4", "https://drive.google.com/file/d/1YqIMogKT2cnSqEIc94B0m-92d8gZXmss/view?usp=sharing"),
-        ("TikTok для экспертов и нишевых блогов", "5", "https://drive.google.com/file/d/1UHJaWZpKyEz2gNWfOdxtRKwdI0fVvRXl/view?usp=sharing"),
-        ("Как набрать первые 10 000 просмотров в TikTok", "6", "https://drive.google.com/file/d/1oqyJgJvwlJFFrgJ3Mkq61AF6r_E1amiq/view?usp=sharing"),
-        ("Полное руководство по успешному продвижению в TikTok", "7", "https://drive.google.com/file/d/1_TkLbJziYEDa2Rz4wL9gdJtjtIy8dW-2/view?usp=sharing")
+        ({"ru": "Гайд по росту и виральности",
+          "uk": "Гайд з росту та віральності"},
+         "4", "https://drive.google.com/file/d/1YqIMogKT2cnSqEIc94B0m-92d8gZXmss/view?usp=sharing"),
+
+        ({"ru": "TikTok для экспертов и нишевых блогов",
+          "uk": "TikTok для експертів та нішевих блогів"},
+         "5", "https://drive.google.com/file/d/1UHJaWZpKyEz2gNWfOdxtRKwdI0fVvRXl/view?usp=sharing"),
+
+        ({"ru": "Как набрать первые 10 000 просмотров в TikTok",
+          "uk": "Як набрати перші 10 000 переглядів у TikTok"},
+         "6", "https://drive.google.com/file/d/1oqyJgJvwlJFFrgJ3Mkq61AF6r_E1amiq/view?usp=sharing"),
+
+        ({"ru": "Полное руководство по успешному продвижению в TikTok",
+          "uk": "Повний посібник з успішного просування в TikTok"},
+         "7", "https://drive.google.com/file/d/1_TkLbJziYEDa2Rz4wL9gdJtjtIy8dW-2/view?usp=sharing")
     ],
+
     'Threads': [
-        ("Полный гайд: Как продвигаться в Threads от Meta", "7", "https://drive.google.com/file/d/1m6qZAPaIz_JhkUS7vT732Zr_kya2AN2t/view?usp=sharing"),
-        ("Продвижение эксперта в Threads: как продавать знания через посты", "6", "https://drive.google.com/file/d/1UsLhQZsF2KpO9PeNGTB5N1YbnSUzTsll/view?usp=sharing"),
-        ("Контент, который вызывает обсуждение в Threads", "5", "https://drive.google.com/file/d/1NLdGKCj-CMxTGlmDmDpPVx-xR5frJ2V8/view?usp=sharing"),
-        ("Как адаптировать Instagram и Twitter контент под Threads", "8", "https://drive.google.com/file/d/1WTE7eXz3uzIFsj4o58I-_rXqT4tHrPyA/view?usp=sharing"),
-        ("Гайд по сторителлингу и экспертному позиционированию", "7", "https://drive.google.com/file/d/1wLZ4kdAkPfjGv_tkhibVZ4s_z8QQs8ew/view?usp=sharing")
+        ({"ru": "Полный гайд: Как продвигаться в Threads от Meta",
+          "uk": "Повний гайд: Як просуватися в Threads від Meta"},
+         "7", "https://drive.google.com/file/d/1m6qZAPaIz_JhkUS7vT732Zr_kya2AN2t/view?usp=sharing"),
+
+        ({"ru": "Продвижение эксперта в Threads: как продавать знания через посты",
+          "uk": "Просування експерта в Threads: як продавати знання через пости"},
+         "6", "https://drive.google.com/file/d/1UsLhQZsF2KpO9PeNGTB5N1YbnSUzTsll/view?usp=sharing"),
+
+        ({"ru": "Контент, который вызывает обсуждение в Threads",
+          "uk": "Контент, що викликає обговорення у Threads"},
+         "5", "https://drive.google.com/file/d/1NLdGKCj-CMxTGlmDmDpPVx-xR5frJ2V8/view?usp=sharing"),
+
+        ({"ru": "Как адаптировать Instagram и Twitter контент под Threads",
+          "uk": "Як адаптувати Instagram та Twitter контент під Threads"},
+         "8", "https://drive.google.com/file/d/1WTE7eXz3uzIFsj4o58I-_rXqT4tHrPyA/view?usp=sharing"),
+
+        ({"ru": "Гайд по сторителлингу и экспертному позиционированию",
+          "uk": "Гайд зі сторітелінгу та експертного позиціонування"},
+         "7", "https://drive.google.com/file/d/1wLZ4kdAkPfjGv_tkhibVZ4s_z8QQs8ew/view?usp=sharing")
     ]
 }
+
 
 social_networks = list(data.keys())
 
@@ -160,7 +223,8 @@ async def select_payment(call: types.CallbackQuery, callback_data: dict):
     lang = user_languages.get(user_id, 'ru')
     s = callback_data['social']
     i = int(callback_data['item'])
-    title, price, _ = data[s][i]
+    title_dict, price, _ = data[s][i]
+title = title_dict[lang]
     kb = types.InlineKeyboardMarkup(row_width=1)
     for method in payment_methods:
         kb.add(types.InlineKeyboardButton(method_names[method][lang], callback_data=pay_cb.new(social=s, item=str(i), method=method)))
@@ -216,7 +280,8 @@ async def confirm_payment(call: types.CallbackQuery, callback_data: dict):
     method = callback_data['method']
     user_id = call.from_user.id
     username = call.from_user.username or 'без username'
-    title, price, _ = data[s][i]
+    title_dict, price, _ = data[s][i]
+title = title_dict[lang]
     lang = user_languages.get(user_id, 'ru')
 
     wait_text = "Ожидается подтверждение администратора…" if lang == 'ru' else "Очікується підтвердження адміністратора…"
