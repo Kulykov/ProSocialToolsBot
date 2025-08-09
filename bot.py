@@ -245,7 +245,8 @@ async def payment_details(call: types.CallbackQuery, callback_data: dict):
     method = callback_data['method']
     user_id = call.from_user.id
     lang = user_languages.get(user_id, 'ru')
-    title, price_usdt, _ = data[s][i]
+    title_dict, price_usdt, _ = data[s][i]
+    title = title_dict[lang]
 
     # 🔹 Monobank теперь тоже считается в гривнах
     if method in ('pumb', 'privat', 'monobank'):
@@ -270,6 +271,7 @@ async def payment_details(call: types.CallbackQuery, callback_data: dict):
     kb.add(types.InlineKeyboardButton(back_text, callback_data=buy_cb.new(social=s, item=str(i))))
 
     await call.message.edit_text(text, reply_markup=kb)
+
 
 
 
