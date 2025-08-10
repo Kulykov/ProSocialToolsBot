@@ -1,7 +1,6 @@
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.utils.callback_data import CallbackData
 import logging
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 
 API_TOKEN = '8189935957:AAHIGvtVwJCnrpj2tTNCJEZbwfcYvlRYfmQ'
 ADMIN_ID = 2041956053  # для подтверждения оплат
@@ -134,12 +133,6 @@ method_names = {
     'monobank': {'ru': 'Монобанк', 'uk': 'Монобанк'}
 }
 
-def get_persistent_keyboard(lang: str):
-    kb = ReplyKeyboardMarkup(resize_keyboard=True)
-    support_text = "🛠 Техподдержка" if lang == 'ru' else "🛠 Техпідтримка"
-    kb.add(KeyboardButton(support_text))
-    return kb
-
 def get_main_menu(lang: str):
     kb = types.InlineKeyboardMarkup(row_width=1)
     for s in social_networks:
@@ -149,7 +142,6 @@ def get_main_menu(lang: str):
         callback_data=lang_cb.new(language='switch')
     ))
     return kb
-
 
 def welcome_text(lang: str):
     if lang == 'ru':
@@ -174,17 +166,14 @@ def welcome_text(lang: str):
 @dp.message_handler(commands=['start'])
 async def start(msg: types.Message):
     user_languages[msg.from_user.id] = 'ru'
-    kb_lang = types.InlineKeyboardMarkup(row_width=2)
-    kb_lang.add(
+    kb = types.InlineKeyboardMarkup(row_width=2)
+    kb.add(
         types.InlineKeyboardButton("🇷🇺 Русский", callback_data=lang_cb.new(language='ru')),
         types.InlineKeyboardButton("🇺🇦 Українська", callback_data=lang_cb.new(language='uk'))
     )
-    await msg.answer(
-        "Пожалуйста, выберите язык / Будь ласка, оберіть мову:",
-        reply_markup=kb_lang
-    )
+    await msg.answer("Пожалуйста, выберите язык / Будь ласка, оберіть мову:", reply_markup=kb)
 
-    # Лог о новом пользователе
+    # Отправка лога о новом пользователе в чат LOG_CHAT_ID
     user = msg.from_user
     user_info = (
         f"👤 Новый пользователь:\n"
@@ -193,7 +182,6 @@ async def start(msg: types.Message):
         f"Имя: {user.full_name}"
     )
     await bot.send_message(LOG_CHAT_ID, user_info, parse_mode='HTML')
-
 
 @dp.callback_query_handler(lang_cb.filter())
 async def change_language(call: types.CallbackQuery, callback_data: dict):
@@ -379,11 +367,6 @@ async def reject_payment(call: types.CallbackQuery, callback_data: dict):
     await bot.send_message(user_id, text, reply_markup=kb)
     await call.message.edit_text("❌ Платёж отклонён. Пользователю отправлено уведомление.")
 
-@dp.message_handler(lambda message: message.text in ["🛠 Техподдержка", "🛠 Техпідтримка"])
-async def send_support_link(message: types.Message):
-    lang = user_languages.get(message.from_user.id, 'ru')
-    text = "Напишите нам: @ProSocial_Help" if lang == 'ru' else "Напишіть нам: @ProSocial_Help"
-    await message.answer(text)
 
 
 if __name__ == '__main__':
