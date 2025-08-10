@@ -139,8 +139,8 @@ def get_persistent_keyboard(lang: str):
     support_text = "🛠 Техподдержка" if lang == 'ru' else "🛠 Техпідтримка"
     kb.add(KeyboardButton(support_text))
     return kb
-    
-    def get_main_menu(lang: str):
+
+def get_main_menu(lang: str):
     kb = types.InlineKeyboardMarkup(row_width=1)
     for s in social_networks:
         kb.add(types.InlineKeyboardButton(s, callback_data=s))
@@ -149,6 +149,7 @@ def get_persistent_keyboard(lang: str):
         callback_data=lang_cb.new(language='switch')
     ))
     return kb
+
 
 def welcome_text(lang: str):
     if lang == 'ru':
