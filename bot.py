@@ -1,3 +1,4 @@
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.utils.callback_data import CallbackData
 import logging
@@ -133,6 +134,17 @@ method_names = {
     'monobank': {'ru': 'Монобанк', 'uk': 'Монобанк'}
 }
 
+# Клавиатура с кнопкой поддержки
+def get_reply_kb(lang: str):
+    if lang == 'ru':
+        support_btn = KeyboardButton("💬 Техподдержка")
+    else:
+        support_btn = KeyboardButton("💬 Підтримка")
+    
+    kb = ReplyKeyboardMarkup(resize_keyboard=True)
+    kb.add(support_btn)
+    return kb
+
 def get_main_menu(lang: str):
     kb = types.InlineKeyboardMarkup(row_width=1)
     for s in social_networks:
@@ -196,7 +208,9 @@ async def change_language(call: types.CallbackQuery, callback_data: dict):
         user_languages[user_id] = lang
 
     lang = user_languages[user_id]
-    await call.message.edit_text(welcome_text(lang), reply_markup=get_main_menu(lang))
+    await call.message.answer(welcome_text(lang), reply_markup=get_reply_kb(lang))
+await call.message.answer("Выберите категорию:", reply_markup=get_main_menu(lang))
+
 
 @dp.callback_query_handler(lambda c: c.data in social_networks)
 async def show_items(call: types.CallbackQuery):
@@ -366,7 +380,16 @@ async def reject_payment(call: types.CallbackQuery, callback_data: dict):
 
     await bot.send_message(user_id, text, reply_markup=kb)
     await call.message.edit_text("❌ Платёж отклонён. Пользователю отправлено уведомление.")
+    
 
+# Хендлер кнопки поддержки
+@dp.message_handler(lambda message: message.text in ["💬 Техподдержка", "💬 Підтримка"])
+async def support(message: types.Message):
+    lang = user_languages.get(message.from_user.id, 'ru')
+    if lang == 'ru':
+        await message.answer("Напишите в нашу поддержку: @ProSocial_Help")
+    else:
+        await message.answer("Напишіть у нашу підтримку: @ProSocial_Help")
 
 
 if __name__ == '__main__':
