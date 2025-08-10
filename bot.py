@@ -141,7 +141,12 @@ def get_main_menu(lang: str):
         "🌐 Сменить язык" if lang == 'ru' else "🌐 Змінити мову",
         callback_data=lang_cb.new(language='switch')
     ))
+    kb.add(types.InlineKeyboardButton(
+        "📞 Техподдержка" if lang == 'ru' else "📞 Техпідтримка",
+        url="https://t.me/ProSocial_Help"
+    ))
     return kb
+
 
 def welcome_text(lang: str):
     if lang == 'ru':
