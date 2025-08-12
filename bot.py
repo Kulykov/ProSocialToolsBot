@@ -134,18 +134,13 @@ method_names = {
 }
 
 def get_main_menu(lang: str):
-    kb = types.InlineKeyboardMarkup(row_width=1)
-    for s in social_networks:
-        kb.add(types.InlineKeyboardButton(s, callback_data=s))
-    kb.add(types.InlineKeyboardButton(
-        "🌐 Сменить язык" if lang == 'ru' else "🌐 Змінити мову",
-        callback_data=lang_cb.new(language='switch')
-    ))
-    kb.add(types.InlineKeyboardButton(
-        "📞 Техподдержка" if lang == 'ru' else "📞 Техпідтримка",
-        url="https://t.me/ProSocial_Help"
-    ))
+    def get_reply_menu(lang: str):
+    kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    change_lang = "🌐 Сменить язык" if lang == 'ru' else "🌐 Змінити мову"
+    support = "📞 Техподдержка" if lang == 'ru' else "📞 Техпідтримка"
+    kb.add(change_lang, support)
     return kb
+
 
 
 def welcome_text(lang: str):
@@ -371,6 +366,19 @@ async def reject_payment(call: types.CallbackQuery, callback_data: dict):
 
     await bot.send_message(user_id, text, reply_markup=kb)
     await call.message.edit_text("❌ Платёж отклонён. Пользователю отправлено уведомление.")
+
+@dp.message_handler(lambda m: m.text in ["🌐 Сменить язык", "🌐 Змінити мову"])
+async def reply_change_lang(msg: types.Message):
+    user_id = msg.from_user.id
+    current = user_languages.get(user_id, 'ru')
+    new_lang = 'uk' if current == 'ru' else 'ru'
+    user_languages[user_id] = new_lang
+    await msg.answer(welcome_text(new_lang), reply_markup=get_reply_menu(new_lang))
+
+
+@dp.message_handler(lambda m: m.text in ["📞 Техподдержка", "📞 Техпідтримка"])
+async def reply_support(msg: types.Message):
+    await msg.answer("Напишите в поддержку: @ProSocial_Help")
 
 
 
