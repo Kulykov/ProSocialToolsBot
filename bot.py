@@ -171,7 +171,11 @@ async def start(msg: types.Message):
         types.InlineKeyboardButton("🇷🇺 Русский", callback_data=lang_cb.new(language='ru')),
         types.InlineKeyboardButton("🇺🇦 Українська", callback_data=lang_cb.new(language='uk'))
     )
-    await msg.answer("Пожалуйста, выберите язык / Будь ласка, оберіть мову:", reply_markup=kb)
+    await msg.answer(
+    "Пожалуйста, выберите язык / Будь ласка, оберіть мову:",
+    reply_markup=get_reply_menu('ru')
+)
+
 
     # Отправка лога о новом пользователе в чат LOG_CHAT_ID
     user = msg.from_user
@@ -196,7 +200,11 @@ async def change_language(call: types.CallbackQuery, callback_data: dict):
         user_languages[user_id] = lang
 
     lang = user_languages[user_id]
-    await call.message.edit_text(welcome_text(lang), reply_markup=get_main_menu(lang))
+    await call.message.answer(
+    welcome_text(lang),
+    reply_markup=get_reply_menu(lang)
+)
+
 
 @dp.callback_query_handler(lambda c: c.data in social_networks)
 async def show_items(call: types.CallbackQuery):
@@ -220,7 +228,11 @@ async def show_items(call: types.CallbackQuery):
 async def go_main(call: types.CallbackQuery):
     user_id = call.from_user.id
     lang = user_languages.get(user_id, 'ru')
-    await call.message.edit_text(welcome_text(lang), reply_markup=get_main_menu(lang))
+    await call.message.answer(
+    welcome_text(lang),
+    reply_markup=get_reply_menu(lang)
+)
+
 
 @dp.callback_query_handler(buy_cb.filter())
 async def select_payment(call: types.CallbackQuery, callback_data: dict):
