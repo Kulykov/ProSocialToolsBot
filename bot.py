@@ -137,13 +137,14 @@ def get_main_menu(lang: str):
     kb = types.InlineKeyboardMarkup(row_width=1)
     for s in social_networks:
         kb.add(types.InlineKeyboardButton(s, callback_data=s))
-    return kb
-
-def get_reply_menu(lang: str):
-    kb = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=False)
-    lang_button = "🌐 Сменить язык" if lang == 'ru' else "🌐 Змінити мову"
-    support_button = "📞 Техподдержка" if lang == 'ru' else "📞 Техпідтримка"
-    kb.add(lang_button, support_button)
+    kb.add(types.InlineKeyboardButton(
+        "🌐 Сменить язык" if lang == 'ru' else "🌐 Змінити мову",
+        callback_data=lang_cb.new(language='switch')
+    ))
+    kb.add(types.InlineKeyboardButton(
+        "📞 Техподдержка" if lang == 'ru' else "📞 Техпідтримка",
+        url="https://t.me/ProSocial_Help"
+    ))
     return kb
 
 
@@ -175,8 +176,7 @@ async def start(msg: types.Message):
         types.InlineKeyboardButton("🇷🇺 Русский", callback_data=lang_cb.new(language='ru')),
         types.InlineKeyboardButton("🇺🇦 Українська", callback_data=lang_cb.new(language='uk'))
     )
-     await msg.answer(welcome_text(lang), reply_markup=get_main_menu(lang))
-    await msg.answer("Пожалуйста, выберите язык / Будь ласка, оберіть мову:", reply_markup=get_reply_keyboard(lang))
+    await msg.answer("Пожалуйста, выберите язык / Будь ласка, оберіть мову:", reply_markup=kb)
 
     # Отправка лога о новом пользователе в чат LOG_CHAT_ID
     user = msg.from_user
@@ -187,25 +187,6 @@ async def start(msg: types.Message):
         f"Имя: {user.full_name}"
     )
     await bot.send_message(LOG_CHAT_ID, user_info, parse_mode='HTML')
-    
-@dp.message_handler(lambda message: message.text in ["🌐 Сменить язык", "🌐 Змінити мову", "📞 Техподдержка", "📞 Техпідтримка"])
-async def reply_buttons_handler(msg: types.Message):
-    user_id = msg.from_user.id
-    lang = user_languages.get(user_id, 'ru')
-
-    if msg.text in ["🌐 Сменить язык", "🌐 Змінити мову"]:
-        # Переключаем язык
-        new_lang = 'uk' if lang == 'ru' else 'ru'
-        user_languages[user_id] = new_lang
-        lang = new_lang
-        await msg.answer(welcome_text(lang), reply_markup=get_main_menu(lang))
-        # Обновим reply-клавиатуру тоже
-        await msg.answer("Вы в главном меню", reply_markup=get_reply_menu(lang))
-
-    elif msg.text in ["📞 Техподдержка", "📞 Техпідтримка"]:
-        url = "https://t.me/ProSocial_Help"
-        support_text = "Связаться с техподдержкой: " + url if lang == 'ru' else "Зв’язатися з техпідтримкою: " + url
-        await msg.answer(support_text)
 
 @dp.callback_query_handler(lang_cb.filter())
 async def change_language(call: types.CallbackQuery, callback_data: dict):
@@ -245,8 +226,6 @@ async def go_main(call: types.CallbackQuery):
     user_id = call.from_user.id
     lang = user_languages.get(user_id, 'ru')
     await call.message.edit_text(welcome_text(lang), reply_markup=get_main_menu(lang))
-    # Отправим reply клавиатуру с языком и поддержкой
-    await bot.send_message(user_id, "Вы в главном меню", reply_markup=get_reply_menu(lang))
 
 @dp.callback_query_handler(buy_cb.filter())
 async def select_payment(call: types.CallbackQuery, callback_data: dict):
