@@ -133,7 +133,6 @@ method_names = {
     'monobank': {'ru': 'Монобанк', 'uk': 'Монобанк'}
 }
 
-def get_main_menu(lang: str):
     def get_reply_menu(lang: str):
     kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
     change_lang = "🌐 Сменить язык" if lang == 'ru' else "🌐 Змінити мову"
