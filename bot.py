@@ -39,11 +39,11 @@ data = {
          "https://drive.google.com/file/d/1vGEPqZWrk17Zsuwv_QSaU1nwdX434QQz/view?usp=sharing"),
         ({"ru": "Как вести Instagram Stories каждый день",
           "uk": "Як вести Instagram Stories щодня"},
-         "4.5",
+         "3.5",
          "https://drive.google.com/file/d/1kEPqZ9A55WXTzN9KXYkwvFBUXfaOXGsb/view?usp=sharing"),
         ({"ru": "Оформление и ведение Instagram как у экспертов",
           "uk": "Оформлення та ведення Instagram як у експертів"},
-         "4",
+         "3",
          "https://drive.google.com/file/d/14yqdEiLMHFogcJXNH-wiiNeeSsisHzQV/view?usp=sharing")
     ],
     'Telegram': [
@@ -53,11 +53,11 @@ data = {
          "https://drive.google.com/file/d/18SIwmq6X1aeXOnPrpO3R-OacqjEYiamT/view?usp=sharing"),
         ({"ru": "Скрипты для Telegram-продаж",
           "uk": "Скрипти для Telegram-продаж"},
-         "4",
+         "3.5",
          "https://drive.google.com/file/d/170EAOgsQmCiwL1wSBK0HBewsp_KVFQyQ/view?usp=sharing"),
         ({"ru": "Контент на 7 дней — шаблоны постов и сторис",
           "uk": "Контент на 7 днів — шаблони постів і сторіс"},
-         "4.5",
+         "3.5",
          "https://drive.google.com/file/d/1HIxdJc0SB0ojlNNz_E5BrFBGtPhtH2dF/view?usp=sharing"),
         ({"ru": "10 ошибок при оформлении профиля и как их исправить",
           "uk": "10 помилок при оформленні профілю та як їх виправити"},
@@ -69,13 +69,13 @@ data = {
          "https://drive.google.com/file/d/1lKJvJqJD74eXCJ2SUF9BLrdeF_XBCNMG/view?usp=sharing"),
         ({"ru": "Оформление и продвижение Telegram-канала",
           "uk": "Оформлення та просування Telegram-каналу"},
-         "5",
+         "4",
          "https://drive.google.com/file/d/11s-KgHP3O188gTXqpTgbhD0CYgFtcnTO/view?usp=sharing")
     ],
     'TikTok': [
         ({"ru": "Гайд по росту и виральности",
           "uk": "Гайд з росту та віральності"},
-         "5",
+         "4",
          "https://drive.google.com/file/d/1YqIMogKT2cnSqEIc94B0m-92d8gZXmss/view?usp=sharing"),
         ({"ru": "TikTok для экспертов и нишевых блогов",
           "uk": "TikTok для експертів та нішевих блогів"},
@@ -133,13 +133,18 @@ method_names = {
     'monobank': {'ru': 'Монобанк', 'uk': 'Монобанк'}
 }
 
-    def get_reply_menu(lang: str):
-    kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    change_lang = "🌐 Сменить язык" if lang == 'ru' else "🌐 Змінити мову"
-    support = "📞 Техподдержка" if lang == 'ru' else "📞 Техпідтримка"
-    kb.add(change_lang, support)
+def get_main_menu(lang: str):
+    kb = types.InlineKeyboardMarkup(row_width=1)
+    for s in social_networks:
+        kb.add(types.InlineKeyboardButton(s, callback_data=s))
     return kb
 
+def get_reply_menu(lang: str):
+    kb = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=False)
+    lang_button = "🌐 Сменить язык" if lang == 'ru' else "🌐 Змінити мову"
+    support_button = "📞 Техподдержка" if lang == 'ru' else "📞 Техпідтримка"
+    kb.add(lang_button, support_button)
+    return kb
 
 
 def welcome_text(lang: str):
@@ -170,11 +175,7 @@ async def start(msg: types.Message):
         types.InlineKeyboardButton("🇷🇺 Русский", callback_data=lang_cb.new(language='ru')),
         types.InlineKeyboardButton("🇺🇦 Українська", callback_data=lang_cb.new(language='uk'))
     )
-    await msg.answer(
-    "Пожалуйста, выберите язык / Будь ласка, оберіть мову:",
-    reply_markup=get_reply_menu('ru')
-)
-
+    await msg.answer("Пожалуйста, выберите язык / Будь ласка, оберіть мову:", reply_markup=kb)
 
     # Отправка лога о новом пользователе в чат LOG_CHAT_ID
     user = msg.from_user
@@ -185,6 +186,25 @@ async def start(msg: types.Message):
         f"Имя: {user.full_name}"
     )
     await bot.send_message(LOG_CHAT_ID, user_info, parse_mode='HTML')
+    
+@dp.message_handler(lambda message: message.text in ["🌐 Сменить язык", "🌐 Змінити мову", "📞 Техподдержка", "📞 Техпідтримка"])
+async def reply_buttons_handler(msg: types.Message):
+    user_id = msg.from_user.id
+    lang = user_languages.get(user_id, 'ru')
+
+    if msg.text in ["🌐 Сменить язык", "🌐 Змінити мову"]:
+        # Переключаем язык
+        new_lang = 'uk' if lang == 'ru' else 'ru'
+        user_languages[user_id] = new_lang
+        lang = new_lang
+        await msg.answer(welcome_text(lang), reply_markup=get_main_menu(lang))
+        # Обновим reply-клавиатуру тоже
+        await msg.answer("Вы в главном меню", reply_markup=get_reply_menu(lang))
+
+    elif msg.text in ["📞 Техподдержка", "📞 Техпідтримка"]:
+        url = "https://t.me/ProSocial_Help"
+        support_text = "Связаться с техподдержкой: " + url if lang == 'ru' else "Зв’язатися з техпідтримкою: " + url
+        await msg.answer(support_text)
 
 @dp.callback_query_handler(lang_cb.filter())
 async def change_language(call: types.CallbackQuery, callback_data: dict):
@@ -199,11 +219,7 @@ async def change_language(call: types.CallbackQuery, callback_data: dict):
         user_languages[user_id] = lang
 
     lang = user_languages[user_id]
-    await call.message.answer(
-    welcome_text(lang),
-    reply_markup=get_reply_menu(lang)
-)
-
+    await call.message.edit_text(welcome_text(lang), reply_markup=get_main_menu(lang))
 
 @dp.callback_query_handler(lambda c: c.data in social_networks)
 async def show_items(call: types.CallbackQuery):
@@ -227,11 +243,9 @@ async def show_items(call: types.CallbackQuery):
 async def go_main(call: types.CallbackQuery):
     user_id = call.from_user.id
     lang = user_languages.get(user_id, 'ru')
-    await call.message.answer(
-    welcome_text(lang),
-    reply_markup=get_reply_menu(lang)
-)
-
+    await call.message.edit_text(welcome_text(lang), reply_markup=get_main_menu(lang))
+    # Отправим reply клавиатуру с языком и поддержкой
+    await bot.send_message(user_id, "Вы в главном меню", reply_markup=get_reply_menu(lang))
 
 @dp.callback_query_handler(buy_cb.filter())
 async def select_payment(call: types.CallbackQuery, callback_data: dict):
@@ -377,19 +391,6 @@ async def reject_payment(call: types.CallbackQuery, callback_data: dict):
 
     await bot.send_message(user_id, text, reply_markup=kb)
     await call.message.edit_text("❌ Платёж отклонён. Пользователю отправлено уведомление.")
-
-@dp.message_handler(lambda m: m.text in ["🌐 Сменить язык", "🌐 Змінити мову"])
-async def reply_change_lang(msg: types.Message):
-    user_id = msg.from_user.id
-    current = user_languages.get(user_id, 'ru')
-    new_lang = 'uk' if current == 'ru' else 'ru'
-    user_languages[user_id] = new_lang
-    await msg.answer(welcome_text(new_lang), reply_markup=get_reply_menu(new_lang))
-
-
-@dp.message_handler(lambda m: m.text in ["📞 Техподдержка", "📞 Техпідтримка"])
-async def reply_support(msg: types.Message):
-    await msg.answer("Напишите в поддержку: @ProSocial_Help")
 
 
 
