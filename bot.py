@@ -175,7 +175,8 @@ async def start(msg: types.Message):
         types.InlineKeyboardButton("🇷🇺 Русский", callback_data=lang_cb.new(language='ru')),
         types.InlineKeyboardButton("🇺🇦 Українська", callback_data=lang_cb.new(language='uk'))
     )
-    await msg.answer("Пожалуйста, выберите язык / Будь ласка, оберіть мову:", reply_markup=kb)
+     await msg.answer(welcome_text(lang), reply_markup=get_main_menu(lang))
+    await msg.answer("Пожалуйста, выберите язык / Будь ласка, оберіть мову:", reply_markup=get_reply_keyboard(lang))
 
     # Отправка лога о новом пользователе в чат LOG_CHAT_ID
     user = msg.from_user
