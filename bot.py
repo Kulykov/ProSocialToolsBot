@@ -205,8 +205,15 @@ async def change_language(call: types.CallbackQuery, callback_data: dict):
         lang = 'uk' if current == 'ru' else 'ru'
     user_languages[user_id] = lang
 
+    # 1️⃣ Сообщение с главным меню (инлайн-кнопки соцсетей и смены языка)
     await call.message.answer(
         welcome_text(lang),
+        reply_markup=get_main_menu(lang)
+    )
+
+    # 2️⃣ Сообщение с reply-кнопкой техподдержки
+    await call.message.answer(
+        "📞" if lang == 'ru' else "📞",
         reply_markup=get_reply_kb(lang)
     )
 
