@@ -1,6 +1,7 @@
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.utils.callback_data import CallbackData
 import logging
+from aiogram.types import MenuButtonWebApp, MenuButtonCommands, BotCommand
 
 API_TOKEN = '8189935957:AAHIGvtVwJCnrpj2tTNCJEZbwfcYvlRYfmQ'
 ADMIN_ID = 2041956053  # для подтверждения оплат
@@ -167,7 +168,23 @@ def welcome_text(lang: str):
             "🔹 Отримайте продукт після підтвердження.\n\n"
             "Щоб змінити мову — натисніть кнопку «Змінити мову» внизу."
         )
-
+        
+async def set_bot_menu(lang='ru'):
+    if lang == 'ru':
+        await bot.set_chat_menu_button(
+            menu_button=types.MenuButtonWebApp(
+                text="📞 Техподдержка",
+                web_app=types.WebAppInfo(url="https://t.me/ProSocial_Help")
+            )
+        )
+    else:
+        await bot.set_chat_menu_button(
+            menu_button=types.MenuButtonWebApp(
+                text="📞 Техпідтримка",
+                web_app=types.WebAppInfo(url="https://t.me/ProSocial_Help")
+            )
+        )
+        
 @dp.message_handler(commands=['start'])
 async def start(msg: types.Message):
     user_languages[msg.from_user.id] = 'ru'
