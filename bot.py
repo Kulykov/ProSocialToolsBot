@@ -201,7 +201,11 @@ async def change_language(call: types.CallbackQuery, callback_data: dict):
         user_languages[user_id] = lang
 
     lang = user_languages[user_id]
-    await call.message.edit_text(welcome_text(lang), reply_markup=get_main_menu(lang))
+    
+    # Меняем только клавиатуру, текст не трогаем
+    await call.message.edit_reply_markup(reply_markup=get_main_menu(lang))
+    await call.answer()  # Чтобы убрать "часики" на кнопке
+
 
 @dp.callback_query_handler(lambda c: c.data in social_networks)
 async def show_items(call: types.CallbackQuery):
