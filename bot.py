@@ -1,7 +1,6 @@
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.utils.callback_data import CallbackData
 import logging
-from aiogram.types import MenuButtonWebApp, MenuButtonCommands, BotCommand
 
 API_TOKEN = '8189935957:AAHIGvtVwJCnrpj2tTNCJEZbwfcYvlRYfmQ'
 ADMIN_ID = 2041956053  # для подтверждения оплат
@@ -142,10 +141,15 @@ def get_main_menu(lang: str):
         "🌐 Сменить язык" if lang == 'ru' else "🌐 Змінити мову",
         callback_data=lang_cb.new(language='switch')
     ))
-    kb.add(types.InlineKeyboardButton(
-        "📞 Техподдержка" if lang == 'ru' else "📞 Техпідтримка",
-        url="https://t.me/ProSocial_Help"
-    ))
+    return kb
+
+
+def get_reply_kb(lang: str):
+    kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    support_text = "📞 Техподдержка" if lang == 'ru' else "📞 Техпідтримка"
+    main_menu_text = "🏠 Главное меню" if lang == 'ru' else "🏠 Головне меню"
+    kb.add(support_text)
+    kb.add(main_menu_text)
     return kb
 
 
@@ -168,23 +172,7 @@ def welcome_text(lang: str):
             "🔹 Отримайте продукт після підтвердження.\n\n"
             "Щоб змінити мову — натисніть кнопку «Змінити мову» внизу."
         )
-        
-async def set_bot_menu(lang='ru'):
-    if lang == 'ru':
-        await bot.set_chat_menu_button(
-            menu_button=types.MenuButtonWebApp(
-                text="📞 Техподдержка",
-                web_app=types.WebAppInfo(url="https://t.me/ProSocial_Help")
-            )
-        )
-    else:
-        await bot.set_chat_menu_button(
-            menu_button=types.MenuButtonWebApp(
-                text="📞 Техпідтримка",
-                web_app=types.WebAppInfo(url="https://t.me/ProSocial_Help")
-            )
-        )
-        
+
 @dp.message_handler(commands=['start'])
 async def start(msg: types.Message):
     user_languages[msg.from_user.id] = 'ru'
@@ -193,7 +181,10 @@ async def start(msg: types.Message):
         types.InlineKeyboardButton("🇷🇺 Русский", callback_data=lang_cb.new(language='ru')),
         types.InlineKeyboardButton("🇺🇦 Українська", callback_data=lang_cb.new(language='uk'))
     )
-    await msg.answer("Пожалуйста, выберите язык / Будь ласка, оберіть мову:", reply_markup=kb)
+    await msg.answer(
+        "Пожалуйста, выберите язык / Будь ласка, оберіть мову:",
+        reply_markup=kb
+    )
 
     # Отправка лога о новом пользователе в чат LOG_CHAT_ID
     user = msg.from_user
@@ -212,13 +203,14 @@ async def change_language(call: types.CallbackQuery, callback_data: dict):
 
     if lang == 'switch':
         current = user_languages.get(user_id, 'ru')
-        new_lang = 'uk' if current == 'ru' else 'ru'
-        user_languages[user_id] = new_lang
-    else:
-        user_languages[user_id] = lang
+        lang = 'uk' if current == 'ru' else 'ru'
+    user_languages[user_id] = lang
 
-    lang = user_languages[user_id]
-    await call.message.edit_text(welcome_text(lang), reply_markup=get_main_menu(lang))
+    # Показываем главное меню с reply-кнопками
+    await call.message.answer(
+        welcome_text(lang),
+        reply_markup=get_reply_kb(lang)
+    )
 
 @dp.callback_query_handler(lambda c: c.data in social_networks)
 async def show_items(call: types.CallbackQuery):
@@ -388,6 +380,20 @@ async def reject_payment(call: types.CallbackQuery, callback_data: dict):
 
     await bot.send_message(user_id, text, reply_markup=kb)
     await call.message.edit_text("❌ Платёж отклонён. Пользователю отправлено уведомление.")
+
+
+@dp.message_handler(lambda m: m.text in ["📞 Техподдержка", "📞 Техпідтримка"])
+async def support_handler(msg: types.Message):
+    lang = user_languages.get(msg.from_user.id, 'ru')
+    text = "Связаться с поддержкой: https://t.me/ProSocial_Help" if lang == 'ru' else \
+           "Зв’язатися з підтримкою: https://t.me/ProSocial_Help"
+    await msg.answer(text, disable_web_page_preview=True)
+
+
+@dp.message_handler(lambda m: m.text in ["🏠 Главное меню", "🏠 Головне меню"])
+async def back_to_main(msg: types.Message):
+    lang = user_languages.get(msg.from_user.id, 'ru')
+    await msg.answer(welcome_text(lang), reply_markup=get_reply_kb(lang))
 
 
 
