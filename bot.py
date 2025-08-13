@@ -211,12 +211,6 @@ async def change_language(call: types.CallbackQuery, callback_data: dict):
         reply_markup=get_main_menu(lang)
     )
 
-    # 2️⃣ Сообщение с reply-кнопкой техподдержки
-    await call.message.answer(
-        "📞" if lang == 'ru' else "📞",
-        reply_markup=get_reply_kb(lang)
-    )
-
 
 @dp.callback_query_handler(lambda c: c.data in social_networks)
 async def show_items(call: types.CallbackQuery):
