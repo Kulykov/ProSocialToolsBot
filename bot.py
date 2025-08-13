@@ -144,12 +144,11 @@ def get_main_menu(lang: str):
     return kb
 
 
+# reply клавиатура — только техподдержка
 def get_reply_kb(lang: str):
     kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
     support_text = "📞 Техподдержка" if lang == 'ru' else "📞 Техпідтримка"
-    main_menu_text = "🏠 Главное меню" if lang == 'ru' else "🏠 Головне меню"
     kb.add(support_text)
-    kb.add(main_menu_text)
     return kb
 
 
@@ -206,11 +205,11 @@ async def change_language(call: types.CallbackQuery, callback_data: dict):
         lang = 'uk' if current == 'ru' else 'ru'
     user_languages[user_id] = lang
 
-    # Показываем главное меню с reply-кнопками
     await call.message.answer(
         welcome_text(lang),
         reply_markup=get_reply_kb(lang)
     )
+
 
 @dp.callback_query_handler(lambda c: c.data in social_networks)
 async def show_items(call: types.CallbackQuery):
@@ -385,15 +384,20 @@ async def reject_payment(call: types.CallbackQuery, callback_data: dict):
 @dp.message_handler(lambda m: m.text in ["📞 Техподдержка", "📞 Техпідтримка"])
 async def support_handler(msg: types.Message):
     lang = user_languages.get(msg.from_user.id, 'ru')
-    text = "Связаться с поддержкой: https://t.me/ProSocial_Help" if lang == 'ru' else \
-           "Зв’язатися з підтримкою: https://t.me/ProSocial_Help"
-    await msg.answer(text, disable_web_page_preview=True)
+    text = (
+        "Связаться с поддержкой: https://t.me/ProSocial_Help" if lang == 'ru'
+        else "Зв’язатися з підтримкою: https://t.me/ProSocial_Help"
+    )
 
+    # Инлайн-кнопка "Главное меню"
+    main_menu_btn = types.InlineKeyboardMarkup().add(
+        types.InlineKeyboardButton(
+            "⬅️ Главное меню" if lang == 'ru' else "⬅️ Головне меню",
+            callback_data='main'
+        )
+    )
 
-@dp.message_handler(lambda m: m.text in ["🏠 Главное меню", "🏠 Головне меню"])
-async def back_to_main(msg: types.Message):
-    lang = user_languages.get(msg.from_user.id, 'ru')
-    await msg.answer(welcome_text(lang), reply_markup=get_reply_kb(lang))
+    await msg.answer(text, disable_web_page_preview=True, reply_markup=main_menu_btn)
 
 
 
