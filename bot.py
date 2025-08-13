@@ -180,7 +180,11 @@ async def start(msg: types.Message):
         "Пожалуйста, выберите язык / Будь ласка, оберіть мову:",
         reply_markup=kb
     )
-
+ # Отправляем клавиатуру с кнопкой техподдержки
+    await bot.send_message(
+        msg.chat.id,
+        reply_markup=reply_kb
+    )
     
 
     # Отправка лога о новом пользователе в чат LOG_CHAT_ID
