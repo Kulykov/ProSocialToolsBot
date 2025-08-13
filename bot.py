@@ -39,11 +39,11 @@ data = {
          "https://drive.google.com/file/d/1vGEPqZWrk17Zsuwv_QSaU1nwdX434QQz/view?usp=sharing"),
         ({"ru": "Как вести Instagram Stories каждый день",
           "uk": "Як вести Instagram Stories щодня"},
-         "4.5",
+         "3.5",
          "https://drive.google.com/file/d/1kEPqZ9A55WXTzN9KXYkwvFBUXfaOXGsb/view?usp=sharing"),
         ({"ru": "Оформление и ведение Instagram как у экспертов",
           "uk": "Оформлення та ведення Instagram як у експертів"},
-         "4",
+         "3",
          "https://drive.google.com/file/d/14yqdEiLMHFogcJXNH-wiiNeeSsisHzQV/view?usp=sharing")
     ],
     'Telegram': [
@@ -53,11 +53,11 @@ data = {
          "https://drive.google.com/file/d/18SIwmq6X1aeXOnPrpO3R-OacqjEYiamT/view?usp=sharing"),
         ({"ru": "Скрипты для Telegram-продаж",
           "uk": "Скрипти для Telegram-продаж"},
-         "4.5",
+         "3.5",
          "https://drive.google.com/file/d/170EAOgsQmCiwL1wSBK0HBewsp_KVFQyQ/view?usp=sharing"),
         ({"ru": "Контент на 7 дней — шаблоны постов и сторис",
           "uk": "Контент на 7 днів — шаблони постів і сторіс"},
-         "4.5",
+         "3.5",
          "https://drive.google.com/file/d/1HIxdJc0SB0ojlNNz_E5BrFBGtPhtH2dF/view?usp=sharing"),
         ({"ru": "10 ошибок при оформлении профиля и как их исправить",
           "uk": "10 помилок при оформленні профілю та як їх виправити"},
@@ -141,6 +141,10 @@ def get_main_menu(lang: str):
         "🌐 Сменить язык" if lang == 'ru' else "🌐 Змінити мову",
         callback_data=lang_cb.new(language='switch')
     ))
+    kb.add(types.InlineKeyboardButton(
+        "📞 Техподдержка" if lang == 'ru' else "📞 Техпідтримка",
+        url="https://t.me/ProSocial_Help"
+    ))
     return kb
 
 
@@ -164,10 +168,6 @@ def welcome_text(lang: str):
             "Щоб змінити мову — натисніть кнопку «Змінити мову» внизу."
         )
 
-# Создаём клавиатуру с кнопкой техподдержки
-reply_kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
-reply_kb.add("📞 Техподдержка")
-
 @dp.message_handler(commands=['start'])
 async def start(msg: types.Message):
     user_languages[msg.from_user.id] = 'ru'
@@ -176,16 +176,7 @@ async def start(msg: types.Message):
         types.InlineKeyboardButton("🇷🇺 Русский", callback_data=lang_cb.new(language='ru')),
         types.InlineKeyboardButton("🇺🇦 Українська", callback_data=lang_cb.new(language='uk'))
     )
-    await msg.answer(
-        "Пожалуйста, выберите язык / Будь ласка, оберіть мову:",
-        reply_markup=kb
-    )
- # Отправляем клавиатуру с кнопкой техподдержки
-    await bot.send_message(
-        msg.chat.id,
-        reply_markup=reply_kb
-    )
-    
+    await msg.answer("Пожалуйста, выберите язык / Будь ласка, оберіть мову:", reply_markup=kb)
 
     # Отправка лога о новом пользователе в чат LOG_CHAT_ID
     user = msg.from_user
@@ -380,11 +371,6 @@ async def reject_payment(call: types.CallbackQuery, callback_data: dict):
 
     await bot.send_message(user_id, text, reply_markup=kb)
     await call.message.edit_text("❌ Платёж отклонён. Пользователю отправлено уведомление.")
-
-# Обработчик нажатия на кнопку
-@dp.message_handler(lambda m: m.text == "📞 Техподдержка")
-async def support_link(msg: types.Message):
-    await msg.answer("Связаться с поддержкой: https://t.me/ProSocial_Help")
 
 
 
